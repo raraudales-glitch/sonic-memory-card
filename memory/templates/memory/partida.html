@@ -1,0 +1,1138 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Sonic Memory Game</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            min-height: 100vh;
+
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+
+            color: white;
+
+            background:
+                radial-gradient(
+                    circle at 20% 20%,
+                    rgba(0, 80, 255, 0.22),
+                    transparent 35%
+                ),
+                radial-gradient(
+                    circle at 80% 80%,
+                    rgba(0, 180, 255, 0.15),
+                    transparent 35%
+                ),
+                #05070d;
+
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: "";
+
+            position: fixed;
+            inset: 0;
+
+            background-image:
+                linear-gradient(
+                    rgba(0, 130, 255, 0.06) 1px,
+                    transparent 1px
+                ),
+                linear-gradient(
+                    90deg,
+                    rgba(0, 130, 255, 0.06) 1px,
+                    transparent 1px
+                );
+
+            background-size: 50px 50px;
+
+            animation:
+                moverFondo 12s linear infinite;
+
+            pointer-events: none;
+
+            z-index: -1;
+        }
+
+        @keyframes moverFondo {
+            from {
+                transform: translate(0, 0);
+            }
+
+            to {
+                transform: translate(50px, 50px);
+            }
+        }
+
+        /* BARRA SUPERIOR */
+
+        .barra-superior {
+            width: 100%;
+
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+            padding: 10px 28px;
+
+            background:
+                rgba(5, 8, 18, 0.94);
+
+            border-bottom:
+                1px solid
+                rgba(0, 145, 255, 0.4);
+
+            box-shadow:
+                0 5px 25px
+                rgba(0, 0, 0, 0.35);
+
+            position: relative;
+
+            z-index: 5;
+        }
+
+        .marca {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .logo-superior {
+            width: 55px;
+            height: 55px;
+
+            object-fit: contain;
+
+            filter:
+                drop-shadow(
+                    0 0 10px
+                    rgba(0, 150, 255, 0.75)
+                );
+        }
+
+        .titulo {
+            font-size: 26px;
+
+            font-weight: 900;
+
+            letter-spacing: 2px;
+
+            color: white;
+
+            text-shadow:
+                0 0 12px
+                rgba(0, 140, 255, 0.9);
+        }
+
+        .info-superior {
+            display: flex;
+
+            align-items: center;
+
+            gap: 24px;
+        }
+
+        .dato {
+            text-align: center;
+        }
+
+        .dato span {
+            display: block;
+
+            font-size: 11px;
+
+            color: #99a8be;
+
+            text-transform: uppercase;
+
+            letter-spacing: 1px;
+        }
+
+        .dato strong {
+            font-size: 16px;
+
+            color: white;
+        }
+
+        .btn-salir {
+            display: inline-block;
+
+            padding: 11px 20px;
+
+            border-radius: 8px;
+
+            background: #bd1e2d;
+
+            color: white;
+
+            text-decoration: none;
+
+            font-weight: bold;
+
+            transition:
+                transform 0.2s,
+                background 0.2s,
+                box-shadow 0.2s;
+        }
+
+        .btn-salir:hover {
+            background: #e3293c;
+
+            transform:
+                translateY(-2px);
+
+            box-shadow:
+                0 0 18px
+                rgba(255, 30, 60, 0.45);
+        }
+
+        /* ZONA JUEGO */
+
+        .zona-juego {
+            padding:
+                28px 20px 50px;
+
+            text-align: center;
+        }
+
+        .zona-juego h1 {
+            margin-bottom: 8px;
+
+            font-size: 34px;
+
+            text-shadow:
+                0 0 12px
+                rgba(0, 140, 255, 0.5);
+        }
+
+        .subtitulo {
+            margin-bottom: 28px;
+
+            color: #9baac2;
+
+            font-size: 17px;
+        }
+
+        /* TABLERO */
+
+        .tablero {
+            display: grid;
+
+            justify-content: center;
+
+            gap: 14px;
+
+            margin: 0 auto;
+        }
+
+        .columnas-4 {
+            grid-template-columns:
+                repeat(
+                    4,
+                    minmax(80px, 120px)
+                );
+        }
+
+        .columnas-5 {
+            grid-template-columns:
+                repeat(
+                    5,
+                    minmax(80px, 120px)
+                );
+        }
+
+        .columnas-6 {
+            grid-template-columns:
+                repeat(
+                    6,
+                    minmax(70px, 105px)
+                );
+        }
+
+        /* CARTAS */
+
+        .carta {
+            position: relative;
+
+            width: 100%;
+
+            aspect-ratio: 3 / 4;
+
+            padding: 0;
+
+            border: none;
+
+            border-radius: 12px;
+
+            background: transparent;
+
+            cursor: pointer;
+
+            transform-style:
+                preserve-3d;
+
+            transition:
+                transform 0.35s ease,
+                filter 0.2s ease;
+        }
+
+        .carta:hover {
+            transform:
+                translateY(-5px)
+                scale(1.03);
+
+            filter:
+                brightness(1.08);
+        }
+
+        .carta img {
+            display: block;
+
+            width: 100%;
+            height: 100%;
+
+            object-fit: cover;
+
+            border-radius: 12px;
+
+            box-shadow:
+                0 8px 20px
+                rgba(0, 0, 0, 0.45),
+                0 0 12px
+                rgba(0, 110, 255, 0.15);
+        }
+
+        .carta.volteada {
+            transform:
+                rotateY(180deg);
+        }
+
+        .carta.volteada img {
+            transform:
+                rotateY(180deg);
+        }
+
+        .carta.emparejada {
+            cursor: default;
+
+            filter:
+                brightness(1.15)
+                drop-shadow(
+                    0 0 13px
+                    rgba(0, 255, 120, 0.75)
+                );
+        }
+
+        .carta.emparejada:hover {
+            transform: none;
+        }
+
+        .numero-carta {
+            position: absolute;
+
+            right: 7px;
+            bottom: 7px;
+
+            width: 24px;
+            height: 24px;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            border-radius: 50%;
+
+            background:
+                rgba(0, 0, 0, 0.75);
+
+            color: white;
+
+            font-size: 11px;
+
+            font-weight: bold;
+
+            pointer-events: none;
+        }
+
+        .carta.volteada .numero-carta,
+        .carta.emparejada .numero-carta {
+            display: none;
+        }
+
+        #mensaje-juego {
+            min-height: 28px;
+
+            margin-top: 20px;
+
+            color: #77c8ff;
+
+            font-size: 16px;
+
+            font-weight: bold;
+        }
+
+        /* RESPONSIVE */
+
+        @media (max-width: 1000px) {
+            .barra-superior {
+                flex-direction: column;
+
+                gap: 15px;
+            }
+
+            .info-superior {
+                flex-wrap: wrap;
+
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 700px) {
+            .titulo {
+                font-size: 20px;
+            }
+
+            .logo-superior {
+                width: 45px;
+                height: 45px;
+            }
+
+            .columnas-4 {
+                grid-template-columns:
+                    repeat(
+                        4,
+                        minmax(55px, 75px)
+                    );
+            }
+
+            .columnas-5 {
+                grid-template-columns:
+                    repeat(
+                        5,
+                        minmax(48px, 65px)
+                    );
+            }
+
+            .columnas-6 {
+                grid-template-columns:
+                    repeat(
+                        6,
+                        minmax(40px, 55px)
+                    );
+            }
+
+            .tablero {
+                gap: 8px;
+            }
+
+            .zona-juego {
+                padding:
+                    20px 8px 40px;
+            }
+
+            .zona-juego h1 {
+                font-size: 27px;
+            }
+        }
+    </style>
+</head>
+
+
+<body
+    data-partida-id="{{ partida.id }}"
+    data-movimientos="{{ partida.movimientos|default:0 }}"
+    data-tapa="{% static imagen_tapa %}"
+    data-static-base="{% static '' %}"
+>
+
+
+<!-- Esto ayuda a garantizar que exista el token CSRF -->
+<form style="display: none;">
+    {% csrf_token %}
+</form>
+
+
+<header class="barra-superior">
+
+    <div class="marca">
+
+        <img
+            src="{% static 'memory/images/sonic-logo.gif' %}"
+            alt="Sonic"
+            class="logo-superior"
+        >
+
+        <div class="titulo">
+            SONIC MEMORY GAME
+        </div>
+
+    </div>
+
+
+    <div class="info-superior">
+
+        <div class="dato">
+
+            <span>
+                Jugador
+            </span>
+
+            <strong>
+                {{ request.user.username }}
+            </strong>
+
+        </div>
+
+
+        <div class="dato">
+
+            <span>
+                Dificultad
+            </span>
+
+            <strong>
+                {{ partida.get_dificultad_display }}
+            </strong>
+
+        </div>
+
+
+        <div class="dato">
+
+            <span>
+                Tiempo
+            </span>
+
+            <strong id="tiempo-juego">
+                {{ partida.limite_segundos }}s
+            </strong>
+
+        </div>
+
+
+        <div class="dato">
+
+            <span>
+                Fallos
+            </span>
+
+            <strong>
+
+                <span id="fallos-actuales">
+                    {{ partida.errores }}
+                </span>
+
+                /
+
+                {{ nivel.fallos }}
+
+            </strong>
+
+        </div>
+
+
+        <a
+            href="{% url 'memory:inicio' %}"
+            class="btn-salir"
+        >
+            Salir
+        </a>
+
+    </div>
+
+</header>
+
+
+<main class="zona-juego">
+
+    <h1>
+        Encuentra las parejas
+    </h1>
+
+
+    <p class="subtitulo">
+
+        {{ nivel.filas }}
+
+        ×
+
+        {{ nivel.columnas }}
+
+        ·
+
+        {{ nivel.parejas }}
+
+        parejas
+
+    </p>
+
+
+    <div
+        class="tablero columnas-{{ nivel.columnas }}"
+    >
+
+        {% for posicion in posiciones %}
+
+            <button
+                type="button"
+                class="carta"
+                data-posicion="{{ posicion }}"
+            >
+
+                <img
+                    src="{% static imagen_tapa %}"
+                    alt="Carta boca abajo"
+                >
+
+                <span class="numero-carta">
+                    {{ forloop.counter }}
+                </span>
+
+            </button>
+
+        {% endfor %}
+
+    </div>
+
+
+    <p id="mensaje-juego"></p>
+
+</main>
+
+
+<script>
+
+    /*
+        Ahora los valores de Django están guardados
+        como atributos del BODY.
+
+        Así evitamos meter {{ ... }}
+        directamente dentro del JavaScript.
+    */
+
+    const PARTIDA_ID =
+        document.body.dataset.partidaId;
+
+
+    const TAPA_CARTA =
+        document.body.dataset.tapa;
+
+
+    const STATIC_BASE =
+        document.body.dataset.staticBase;
+
+
+    let seqNum =
+        Number(
+            document.body.dataset.movimientos
+        ) + 1;
+
+
+    let bloqueado =
+        false;
+
+
+    /*
+        CLIC EN LAS CARTAS
+    */
+
+    document
+        .querySelectorAll(".carta")
+        .forEach(
+            carta => {
+
+                carta.addEventListener(
+                    "click",
+                    async function () {
+
+                        if (bloqueado) {
+                            return;
+                        }
+
+
+                        if (
+                            this.classList.contains(
+                                "emparejada"
+                            )
+                        ) {
+                            return;
+                        }
+
+
+                        if (
+                            this.classList.contains(
+                                "volteada"
+                            )
+                        ) {
+                            return;
+                        }
+
+
+                        const posicion =
+                            Number(
+                                this.dataset.posicion
+                            );
+
+
+                        await procesarCarta(
+                            posicion
+                        );
+                    }
+                );
+            }
+        );
+
+
+    /*
+        ENVIAR POSICIÓN A DJANGO
+    */
+
+    async function procesarCarta(
+        posicion
+    ) {
+
+        try {
+
+            const respuesta =
+                await fetch(
+                    `/partidas/${PARTIDA_ID}/voltear/`,
+                    {
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json",
+
+                            "X-CSRFToken":
+                                obtenerCookie(
+                                    "csrftoken"
+                                )
+                        },
+
+                        body:
+                            JSON.stringify(
+                                {
+                                    posicion:
+                                        posicion,
+
+                                    seq_num:
+                                        seqNum
+                                }
+                            )
+                    }
+                );
+
+
+            const datos =
+                await respuesta.json();
+
+
+            if (!respuesta.ok) {
+
+                mostrarMensaje(
+                    datos.error ||
+                    "No se pudo procesar la carta"
+                );
+
+                return;
+            }
+
+
+            seqNum++;
+
+
+            /*
+                PRIMERA CARTA
+            */
+
+            if (
+                datos.tipo ===
+                "primera"
+            ) {
+
+                mostrarPersonaje(
+                    datos.carta
+                );
+
+
+                mostrarMensaje(
+                    "Selecciona otra carta"
+                );
+
+
+                return;
+            }
+
+
+            /*
+                SEGUNDA CARTA
+            */
+
+            if (
+                datos.tipo === "pareja"
+                ||
+                datos.tipo === "fallo"
+            ) {
+
+                datos.cartas.forEach(
+                    cartaInfo => {
+
+                        mostrarPersonaje(
+                            cartaInfo
+                        );
+                    }
+                );
+            }
+
+
+            /*
+                PAREJA CORRECTA
+            */
+
+            if (
+                datos.tipo ===
+                "pareja"
+            ) {
+
+                datos.cartas.forEach(
+                    cartaInfo => {
+
+                        const elemento =
+                            obtenerCarta(
+                                cartaInfo.posicion
+                            );
+
+
+                        if (elemento) {
+
+                            elemento.classList.add(
+                                "emparejada"
+                            );
+
+                            elemento.classList.remove(
+                                "volteada"
+                            );
+                        }
+                    }
+                );
+
+
+                mostrarMensaje(
+                    "¡Pareja encontrada! "
+                    +
+                    datos.personaje.nombre
+                );
+
+
+                return;
+            }
+
+
+            /*
+                FALLO
+            */
+
+            if (
+                datos.tipo ===
+                "fallo"
+            ) {
+
+                bloqueado =
+                    true;
+
+
+                actualizarFallos(
+                    datos.fallos
+                );
+
+
+                mostrarMensaje(
+                    "No son pareja"
+                );
+
+
+                setTimeout(
+                    () => {
+
+                        datos.cartas.forEach(
+                            cartaInfo => {
+
+                                ocultarCarta(
+                                    cartaInfo.posicion
+                                );
+                            }
+                        );
+
+
+                        bloqueado =
+                            false;
+
+
+                        mostrarMensaje(
+                            ""
+                        );
+
+                    },
+
+                    datos.espera_ms
+                );
+            }
+
+
+        } catch (error) {
+
+            console.error(
+                "Error:",
+                error
+            );
+
+
+            mostrarMensaje(
+                "Error al comunicarse con el servidor"
+            );
+        }
+    }
+
+
+    /*
+        MOSTRAR PERSONAJE
+    */
+
+    function mostrarPersonaje(
+        cartaInfo
+    ) {
+
+        const carta =
+            obtenerCarta(
+                cartaInfo.posicion
+            );
+
+
+        if (!carta) {
+            return;
+        }
+
+
+        const imagen =
+            carta.querySelector(
+                "img"
+            );
+
+
+        imagen.src =
+            STATIC_BASE
+            +
+            cartaInfo.imagen;
+
+
+        imagen.alt =
+            cartaInfo.nombre;
+
+
+        imagen.style.objectFit =
+            "contain";
+
+
+        imagen.style.background =
+            "rgba(8, 12, 25, 0.96)";
+
+
+        carta.classList.add(
+            "volteada"
+        );
+    }
+
+
+    /*
+        VOLVER A PONER LA TAPA
+    */
+
+    function ocultarCarta(
+        posicion
+    ) {
+
+        const carta =
+            obtenerCarta(
+                posicion
+            );
+
+
+        if (!carta) {
+            return;
+        }
+
+
+        if (
+            carta.classList.contains(
+                "emparejada"
+            )
+        ) {
+            return;
+        }
+
+
+        const imagen =
+            carta.querySelector(
+                "img"
+            );
+
+
+        imagen.src =
+            TAPA_CARTA;
+
+
+        imagen.alt =
+            "Carta boca abajo";
+
+
+        imagen.style.objectFit =
+            "cover";
+
+
+        imagen.style.background =
+            "transparent";
+
+
+        carta.classList.remove(
+            "volteada"
+        );
+    }
+
+
+    /*
+        BUSCAR CARTA SEGÚN POSICIÓN
+    */
+
+    function obtenerCarta(
+        posicion
+    ) {
+
+        return document.querySelector(
+            `.carta[data-posicion="${posicion}"]`
+        );
+    }
+
+
+    /*
+        ACTUALIZAR CONTADOR DE FALLOS
+    */
+
+    function actualizarFallos(
+        fallos
+    ) {
+
+        const elemento =
+            document.getElementById(
+                "fallos-actuales"
+            );
+
+
+        if (elemento) {
+
+            elemento.textContent =
+                fallos;
+        }
+    }
+
+
+    /*
+        MENSAJE DE ESTADO
+    */
+
+    function mostrarMensaje(
+        mensaje
+    ) {
+
+        const elemento =
+            document.getElementById(
+                "mensaje-juego"
+            );
+
+
+        if (elemento) {
+
+            elemento.textContent =
+                mensaje;
+        }
+    }
+
+
+    /*
+        OBTENER TOKEN CSRF
+    */
+
+    function obtenerCookie(
+        nombre
+    ) {
+
+        let valor =
+            null;
+
+
+        if (document.cookie) {
+
+            const cookies =
+                document.cookie.split(
+                    ";"
+                );
+
+
+            for (
+                let cookie
+                of cookies
+            ) {
+
+                cookie =
+                    cookie.trim();
+
+
+                if (
+                    cookie.startsWith(
+                        nombre + "="
+                    )
+                ) {
+
+                    valor =
+                        decodeURIComponent(
+                            cookie.substring(
+                                nombre.length + 1
+                            )
+                        );
+
+
+                    break;
+                }
+            }
+        }
+
+
+        return valor;
+    }
+
+</script>
+
+
+</body>
+
+</html>

@@ -130,12 +130,33 @@ def jugar_partida(
         * nivel["columnas"]
     )
 
+    if partida.dificultad == "FACIL":
+        imagen_tapa = (
+            "memory/images/tapa/"
+            "Center_Card.png"
+        )
+
+    elif partida.dificultad == "NORMAL":
+        imagen_tapa = (
+            "memory/images/tapa/"
+            "Chaos_Fruit.png"
+        )
+
+    else:
+        imagen_tapa = (
+            "memory/images/tapa/"
+            "The_Master.png"
+        )
+
     contexto = {
         "partida": partida,
         "nivel": nivel,
+
         "posiciones": range(
             cantidad_cartas
         ),
+
+        "imagen_tapa": imagen_tapa,
     }
 
     return render(
