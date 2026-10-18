@@ -1,0 +1,885 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Sonic Memory Game</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            min-height: 100vh;
+            font-family: Arial, Helvetica, sans-serif;
+            color: white;
+            overflow-x: hidden;
+
+            background:
+                radial-gradient(
+                    circle at 20% 20%,
+                    rgba(0, 80, 255, 0.22),
+                    transparent 35%
+                ),
+                radial-gradient(
+                    circle at 80% 80%,
+                    rgba(0, 180, 255, 0.15),
+                    transparent 35%
+                ),
+                #05070d;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+
+            background-image:
+                linear-gradient(
+                    rgba(0, 130, 255, 0.06) 1px,
+                    transparent 1px
+                ),
+                linear-gradient(
+                    90deg,
+                    rgba(0, 130, 255, 0.06) 1px,
+                    transparent 1px
+                );
+
+            background-size: 50px 50px;
+
+            animation: moverFondo 12s linear infinite;
+
+            pointer-events: none;
+            z-index: -3;
+        }
+
+        body::after {
+            content: "";
+            position: fixed;
+
+            width: 450px;
+            height: 450px;
+
+            top: -170px;
+            right: -100px;
+
+            border-radius: 50%;
+
+            background:
+                radial-gradient(
+                    circle,
+                    rgba(0, 102, 255, 0.35),
+                    rgba(0, 102, 255, 0)
+                );
+
+            animation: esfera 7s ease-in-out infinite alternate;
+
+            pointer-events: none;
+            z-index: -2;
+        }
+
+        @keyframes moverFondo {
+            from {
+                transform: translate(0, 0);
+            }
+
+            to {
+                transform: translate(50px, 50px);
+            }
+        }
+
+        @keyframes esfera {
+            from {
+                transform: translateY(0) scale(1);
+            }
+
+            to {
+                transform: translateY(80px) scale(1.15);
+            }
+        }
+
+        .barra-superior {
+            width: 100%;
+
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            padding: 14px 30px;
+
+            background: rgba(5, 8, 18, 0.88);
+
+            border-bottom:
+                1px solid rgba(0, 145, 255, 0.35);
+
+            backdrop-filter: blur(12px);
+
+            box-shadow:
+                0 5px 25px rgba(0, 0, 0, 0.4);
+        }
+
+        .marca {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .logo-superior {
+            width: 54px;
+            height: 54px;
+
+            object-fit: contain;
+
+            filter:
+                drop-shadow(
+                    0 0 10px rgba(0, 150, 255, 0.75)
+                );
+        }
+
+        .titulo {
+            font-size: 27px;
+            font-weight: 900;
+
+            letter-spacing: 2px;
+
+            color: white;
+
+            text-shadow:
+                0 0 10px rgba(0, 140, 255, 0.8);
+        }
+
+        .zona-usuario {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .jugador {
+            padding-right: 10px;
+            text-align: right;
+        }
+
+        .jugador-label {
+            display: block;
+
+            font-size: 11px;
+
+            color: #9ba8bd;
+
+            text-transform: uppercase;
+
+            letter-spacing: 1px;
+        }
+
+        .jugador-nombre {
+            font-size: 17px;
+            font-weight: bold;
+            color: white;
+        }
+
+        .btn-superior {
+            border: none;
+            border-radius: 8px;
+
+            padding: 11px 18px;
+
+            font-weight: bold;
+            font-size: 14px;
+
+            cursor: pointer;
+
+            transition:
+                transform 0.2s,
+                box-shadow 0.2s,
+                background 0.2s;
+        }
+
+        .btn-perfil {
+            background: #0969da;
+            color: white;
+
+            box-shadow:
+                0 0 15px rgba(0, 110, 255, 0.25);
+        }
+
+        .btn-perfil:hover {
+            background: #1784ff;
+
+            transform: translateY(-2px);
+
+            box-shadow:
+                0 0 20px rgba(0, 130, 255, 0.55);
+        }
+
+        .btn-cerrar {
+            background: #bd1e2d;
+            color: white;
+
+            box-shadow:
+                0 0 15px rgba(255, 0, 30, 0.20);
+        }
+
+        .btn-cerrar:hover {
+            background: #e3293c;
+
+            transform: translateY(-2px);
+
+            box-shadow:
+                0 0 20px rgba(255, 30, 60, 0.55);
+        }
+
+        .contenedor {
+            min-height: calc(100vh - 84px);
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            padding: 50px 20px;
+        }
+
+        .panel {
+            width: min(920px, 95%);
+
+            padding: 45px;
+
+            background:
+                rgba(8, 12, 25, 0.84);
+
+            border:
+                1px solid rgba(0, 145, 255, 0.30);
+
+            border-radius: 22px;
+
+            backdrop-filter: blur(15px);
+
+            box-shadow:
+                0 25px 70px rgba(0, 0, 0, 0.55),
+                0 0 40px rgba(0, 100, 255, 0.08);
+
+            text-align: center;
+        }
+
+        .titulo-principal {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            gap: 22px;
+
+            margin-bottom: 10px;
+        }
+
+        .logo-sonic {
+            width: 95px;
+            height: 95px;
+
+            object-fit: contain;
+
+            filter:
+                drop-shadow(
+                    0 0 15px rgba(0, 150, 255, 0.85)
+                );
+        }
+
+        .titulo-principal h1 {
+            margin: 0;
+
+            font-size: clamp(38px, 6vw, 64px);
+
+            letter-spacing: 3px;
+
+            color: white;
+
+            text-shadow:
+                0 0 15px rgba(0, 130, 255, 0.65);
+        }
+
+        .subtitulo {
+            color: #9baac2;
+
+            margin-bottom: 40px;
+
+            font-size: 18px;
+        }
+
+        .dificultades {
+            display: grid;
+
+            grid-template-columns:
+                repeat(3, 1fr);
+
+            gap: 20px;
+        }
+
+        .dificultad {
+            min-height: 190px;
+
+            border: none;
+            border-radius: 18px;
+
+            padding: 25px;
+
+            cursor: pointer;
+
+            font-weight: bold;
+
+            transition:
+                transform 0.25s,
+                box-shadow 0.25s,
+                filter 0.25s;
+        }
+
+        .dificultad:hover {
+            transform:
+                translateY(-8px)
+                scale(1.02);
+
+            filter: brightness(1.08);
+        }
+
+        .dificultad h2 {
+            font-size: 28px;
+            margin-bottom: 14px;
+        }
+
+        .dificultad p {
+            font-size: 15px;
+            line-height: 1.7;
+        }
+
+        .facil {
+            color: white;
+
+            background:
+                linear-gradient(
+                    145deg,
+                    #0b9e44,
+                    #045927
+                );
+
+            box-shadow:
+                0 10px 30px rgba(0, 200, 90, 0.20);
+        }
+
+        .facil:hover {
+            box-shadow:
+                0 15px 35px rgba(0, 255, 110, 0.40);
+        }
+
+        .normal {
+            color: #151515;
+
+            background:
+                linear-gradient(
+                    145deg,
+                    #ffd52a,
+                    #d79b00
+                );
+
+            box-shadow:
+                0 10px 30px rgba(255, 205, 0, 0.20);
+        }
+
+        .normal:hover {
+            box-shadow:
+                0 15px 35px rgba(255, 215, 0, 0.45);
+        }
+
+        .dificil {
+            color: white;
+
+            background:
+                linear-gradient(
+                    145deg,
+                    #e2293f,
+                    #80101e
+                );
+
+            box-shadow:
+                0 10px 30px rgba(255, 20, 50, 0.20);
+        }
+
+        .dificil:hover {
+            box-shadow:
+                0 15px 35px rgba(255, 40, 70, 0.45);
+        }
+
+        #resultado {
+            margin-top: 30px;
+
+            min-height: 25px;
+
+            color: #77c8ff;
+
+            font-weight: bold;
+        }
+
+        .modal-fondo {
+            position: fixed;
+
+            inset: 0;
+
+            display: none;
+
+            align-items: center;
+            justify-content: center;
+
+            background:
+                rgba(0, 0, 0, 0.72);
+
+            backdrop-filter: blur(8px);
+
+            z-index: 20;
+        }
+
+        .modal-fondo.activo {
+            display: flex;
+        }
+
+        .modal {
+            width: min(420px, 90%);
+
+            padding: 35px;
+
+            border-radius: 18px;
+
+            background: #0b1020;
+
+            border:
+                1px solid rgba(0, 145, 255, 0.4);
+
+            box-shadow:
+                0 20px 70px rgba(0, 0, 0, 0.7);
+
+            text-align: center;
+        }
+
+        .modal h2 {
+            margin-bottom: 25px;
+        }
+
+        .dato-perfil {
+            padding: 12px;
+
+            margin-bottom: 10px;
+
+            background:
+                rgba(255, 255, 255, 0.05);
+
+            border-radius: 8px;
+        }
+
+        .cerrar-modal {
+            margin-top: 20px;
+
+            padding: 10px 25px;
+
+            border: none;
+            border-radius: 7px;
+
+            cursor: pointer;
+
+            background: #0969da;
+            color: white;
+
+            font-weight: bold;
+        }
+
+        @media (max-width: 850px) {
+            .barra-superior {
+                flex-direction: column;
+                gap: 18px;
+            }
+
+            .zona-usuario {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .jugador {
+                text-align: center;
+                width: 100%;
+            }
+
+            .dificultades {
+                grid-template-columns: 1fr;
+            }
+
+            .panel {
+                padding: 30px 20px;
+            }
+
+            .titulo-principal {
+                flex-direction: column;
+            }
+
+            .logo-sonic {
+                width: 80px;
+                height: 80px;
+            }
+        }
+    </style>
+</head>
+
+
+<body>
+
+<header class="barra-superior">
+
+    <div class="marca">
+
+        <img
+            src="{% static 'memory/images/sonic-logo.gif' %}"
+            alt="Sonic Logo"
+            class="logo-superior"
+        >
+
+        <div class="titulo">
+            SONIC MEMORY GAME
+        </div>
+
+    </div>
+
+
+    <div class="zona-usuario">
+
+        <div class="jugador">
+
+            <span class="jugador-label">
+                Jugador
+            </span>
+
+            <span class="jugador-nombre">
+                {{ request.user.username }}
+            </span>
+
+        </div>
+
+
+        <button
+            class="btn-superior btn-perfil"
+            onclick="abrirPerfil()"
+        >
+            Mi perfil
+        </button>
+
+
+        <form
+            method="post"
+            action="{% url 'logout' %}"
+        >
+
+            {% csrf_token %}
+
+            <button
+                type="submit"
+                class="btn-superior btn-cerrar"
+            >
+                Cerrar sesión
+            </button>
+
+        </form>
+
+    </div>
+
+</header>
+
+
+<main class="contenedor">
+
+    <section class="panel">
+
+
+        <div class="titulo-principal">
+
+            <img
+                src="{% static 'memory/images/sonic-logo.gif' %}"
+                alt="Sonic Logo"
+                class="logo-sonic"
+            >
+
+            <h1>
+                Sonic Memory Game
+            </h1>
+
+        </div>
+
+
+        <p class="subtitulo">
+            Selecciona tu dificultad
+        </p>
+
+
+        <div class="dificultades">
+
+
+            <button
+                class="dificultad facil"
+                onclick="crearPartida('FACIL')"
+            >
+
+                <h2>
+                    FÁCIL
+                </h2>
+
+                <p>
+                    4 × 4
+                    <br>
+                    8 parejas
+                    <br>
+                    150 segundos
+                    <br>
+                    16 fallos
+                </p>
+
+            </button>
+
+
+            <button
+                class="dificultad normal"
+                onclick="crearPartida('NORMAL')"
+            >
+
+                <h2>
+                    NORMAL
+                </h2>
+
+                <p>
+                    4 × 5
+                    <br>
+                    10 parejas
+                    <br>
+                    150 segundos
+                    <br>
+                    15 fallos
+                </p>
+
+            </button>
+
+
+            <button
+                class="dificultad dificil"
+                onclick="crearPartida('DIFICIL')"
+            >
+
+                <h2>
+                    DIFÍCIL
+                </h2>
+
+                <p>
+                    6 × 6
+                    <br>
+                    18 parejas
+                    <br>
+                    210 segundos
+                    <br>
+                    22 fallos
+                </p>
+
+            </button>
+
+        </div>
+
+
+        <p id="resultado"></p>
+
+    </section>
+
+</main>
+
+
+<div
+    class="modal-fondo"
+    id="modalPerfil"
+>
+
+    <div class="modal">
+
+        <h2>
+            Mi perfil
+        </h2>
+
+        <div class="dato-perfil">
+
+            <strong>
+                Jugador:
+            </strong>
+
+            {{ request.user.username }}
+
+        </div>
+
+
+        <div class="dato-perfil">
+
+            <strong>
+                Email:
+            </strong>
+
+            {% if request.user.email %}
+
+                {{ request.user.email }}
+
+            {% else %}
+
+                Sin correo registrado
+
+            {% endif %}
+
+        </div>
+
+
+        <button
+            class="cerrar-modal"
+            onclick="cerrarPerfil()"
+        >
+            Cerrar
+        </button>
+
+    </div>
+
+</div>
+
+
+<script>
+
+    async function crearPartida(dificultad) {
+
+        const resultado =
+            document.getElementById("resultado");
+
+        resultado.textContent =
+            "Creando partida...";
+
+
+        try {
+
+            const respuesta = await fetch(
+                "/partidas/nueva/",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json",
+
+                        "X-CSRFToken":
+                            obtenerCookie(
+                                "csrftoken"
+                            )
+                    },
+
+                    body: JSON.stringify({
+                        dificultad: dificultad
+                    })
+                }
+            );
+
+
+            const datos =
+                await respuesta.json();
+
+
+            if (datos.ok) {
+
+                window.location.href =
+                    "/partidas/" +
+                    datos.partida.id +
+                    "/";
+
+            } else {
+
+                resultado.textContent =
+                    datos.error;
+            }
+
+        } catch (error) {
+
+            resultado.textContent =
+                "No se pudo crear la partida.";
+        }
+    }
+
+
+    function obtenerCookie(nombre) {
+
+        let valor = null;
+
+        if (document.cookie) {
+
+            const cookies =
+                document.cookie.split(";");
+
+            for (let cookie of cookies) {
+
+                cookie =
+                    cookie.trim();
+
+                if (
+                    cookie.startsWith(
+                        nombre + "="
+                    )
+                ) {
+
+                    valor =
+                        decodeURIComponent(
+                            cookie.substring(
+                                nombre.length + 1
+                            )
+                        );
+
+                    break;
+                }
+            }
+        }
+
+        return valor;
+    }
+
+
+    function abrirPerfil() {
+
+        document
+            .getElementById("modalPerfil")
+            .classList
+            .add("activo");
+    }
+
+
+    function cerrarPerfil() {
+
+        document
+            .getElementById("modalPerfil")
+            .classList
+            .remove("activo");
+    }
+
+
+    document
+        .getElementById("modalPerfil")
+        .addEventListener(
+            "click",
+            function(event) {
+
+                if (
+                    event.target === this
+                ) {
+
+                    cerrarPerfil();
+                }
+            }
+        );
+
+</script>
+
+</body>
+
+</html>
