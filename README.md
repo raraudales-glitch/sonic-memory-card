@@ -1,18 +1,20 @@
 # Sonic Memory Card
 
-**Proyecto 1 — Memory Game: emparejamiento de cartas**  
-**Asignatura:** Arquitectura de Computadoras · Ingeniería en Computación · UTH  
+**Proyecto 1: Memory Game (emparejamiento de cartas)**  
+**Asignatura:** Arquitectura de Computadoras  
+**Carrera:** Ingeniería en Computación  
+**Universidad:** Universidad Tecnológica de Honduras (UTH)  
 **Repositorio:** https://github.com/raraudales-glitch/sonic-memory-card
 
-> **Estado:** En desarrollo. El repositorio contiene la base de Django, PostgreSQL y los modelos del juego, pero **todavía no incluye una partida jugable, las rutas del juego ni su API**. La configuración de Docker actual es para **desarrollo local**, no para producción.
+> **Estado del proyecto:** En desarrollo. Ya preparamos la base de Django, PostgreSQL y los modelos principales. Nuestro siguiente paso es implementar el juego, sus pantallas y las rutas necesarias. Por ahora, Docker está configurado para hacer pruebas locales.
 
 ## 1. Descripción
 
-Sonic Memory Card es un proyecto académico de juego de memoria de un solo jugador con temática visual inspirada en Sonic. El objetivo es encontrar parejas de cartas iguales antes de que termine el tiempo o se exceda el límite de fallos.
+En nuestro equipo estamos desarrollando **Sonic Memory Card**, un juego de memoria para un solo jugador con una temática visual de Sonic. La idea es sencilla: encontrar todas las parejas de cartas antes de que se agote el tiempo o se alcance el límite de fallos.
 
-De acuerdo con la guía del **Proyecto Final de Arquitectura de Computadoras**, la lógica y los datos privados de la partida deben mantenerse en **Django**. El navegador mostrará las cartas y animaciones, pero no decidirá si una jugada es válida ni calculará el resultado o la puntuación.
+Elegimos **Python y Django** para construir la lógica del juego y **PostgreSQL** para guardar la información de usuarios y partidas. Queremos que las jugadas se validen en el servidor: el navegador se encargará de mostrar las cartas y animaciones, mientras Django decidirá si los movimientos son correctos y calculará los resultados.
 
-El propósito académico incluye demostrar el funcionamiento del juego y su infraestructura: Linux, Docker, redes, volúmenes, proxy inverso, persistencia, monitoreo, actualización y recuperación.
+Además de crear el juego, con este proyecto buscamos poner en práctica lo aprendido en Arquitectura de Computadoras. Para eso trabajaremos con contenedores Docker, redes, volúmenes, Linux, despliegue web y herramientas de administración y monitoreo.
 
 ## 2. Tecnologías
 
@@ -28,9 +30,9 @@ El propósito académico incluye demostrar el funcionamiento del juego y su infr
 | Caddy o Nginx | Proxy inverso, HTTPS y estáticos | Pendiente |
 | Linux en la nube | Servidor de producción | Pendiente |
 
-## 3. Funcionalidades implementadas
+## 3. Lo que llevamos desarrollado
 
-En el código publicado actualmente existen:
+Hasta el momento, hemos creado las siguientes partes del proyecto:
 
 - **`PerfilJugador`**: vínculo con el usuario Django, alias y preferencias de audio.
 - **`Personaje`**: catálogo de personajes para las cartas, con nombre, origen e imagen.
@@ -41,13 +43,15 @@ En el código publicado actualmente existen:
 - Modelos registrados en el **panel administrativo de Django**.
 - Migración inicial y volumen Docker para persistir los datos de PostgreSQL.
 
-**Importante:** tener estos modelos no significa que el juego, las validaciones o las estadísticas ya funcionen desde la interfaz.
+Esta primera etapa nos permite organizar la información del juego. **Todavía nos falta conectar los modelos con las vistas y la interfaz**, así que por ahora no tenemos partidas jugables.
 
-## 4. Reglas del Proyecto 1 (por implementar)
+## 4. Cómo funcionará nuestro juego
 
-El jugador voltea dos cartas por turno. Una pareja correcta queda descubierta; si las cartas son distintas, se registra un fallo y se vuelven a ocultar. El servidor debe generar y conservar el orden completo del tablero, revelar solo lo permitido y rechazar acciones inválidas (repetir una carta, seleccionar una ya emparejada o una tercera carta en el mismo turno).
+Para desarrollar el Proyecto 1 seguiremos las reglas de la guía del catedrático. En cada turno el jugador podrá voltear dos cartas. Si son iguales, la pareja quedará descubierta; si son distintas, se sumará un fallo y volverán a ocultarse.
 
-### Niveles obligatorios
+Implementaremos el orden de las cartas en Django para que el navegador no pueda conocer todo el tablero antes de jugar. También impediremos voltear dos veces la misma carta, seleccionar una carta ya emparejada o descubrir una tercera carta dentro del mismo turno.
+
+### Niveles que implementaremos
 
 | Parámetro | Fácil | Normal | Difícil |
 |---|---:|---:|---:|
@@ -67,7 +71,7 @@ El jugador voltea dos cartas por turno. Una pareja correcta queda descubierta; s
 - **ABANDONADA:** el jugador abandona o inicia una nueva partida.
 - **EN_CURSO:** la partida admite jugadas válidas.
 
-Solo una partida **GANADA** puede recibir puntos. Su fórmula es:
+Nos basaremos en la fórmula de la guía para calcular el puntaje de las partidas ganadas:
 
 ```text
 Puntaje = (1000 + 5 × segundos_restantes − 25 × fallos) × multiplicador
@@ -75,9 +79,9 @@ Puntaje mínimo si gana = 100 × multiplicador
 Puntaje si pierde, abandona o agota el tiempo = 0
 ```
 
-El servidor debe calcular y almacenar el puntaje **una sola vez**. La recarga del navegador no debe reiniciar el tiempo; las acciones posteriores al final de la partida deben rechazarse. La guía contempla una tolerancia de **2 segundos** por latencia de red.
+Haremos que Django calcule y guarde el puntaje **una sola vez**. Si el jugador recarga la página, la partida conservará su tiempo real; cuando termine, ya no se podrán realizar movimientos. También respetaremos la tolerancia de **2 segundos** por latencia indicada en la guía.
 
-## 5. Requisitos para ejecución local
+## 5. Cómo ejecutar nuestro proyecto en una computadora
 
 - **Git** instalado.
 - **Docker Desktop** con el motor Linux activo, o Docker Engine con Compose v2.
@@ -140,7 +144,7 @@ docker compose exec web python manage.py createsuperuser
 - Administración: **http://localhost:8000/admin/**
 - La ruta `http://localhost:8000/` todavía **no está implementada** y puede devolver **404**.
 
-Esta instalación **solo permite verificar la base administrativa**; aún no existe una partida jugable.
+Por ahora, con esta instalación podemos revisar el panel administrativo y comprobar los modelos y la conexión con PostgreSQL. **El juego de cartas todavía está en desarrollo.**
 
 ## 6. Comandos de administración local
 
@@ -158,9 +162,9 @@ Esta instalación **solo permite verificar la base administrativa**; aún no exi
 
 > **Precaución:** `docker compose down -v` elimina los volúmenes de Compose y puede borrar la base de datos. No lo ejecutes si necesitas conservar usuarios y partidas.
 
-La orden de pruebas está disponible, pero **todavía no hay una suite de pruebas implementada** para las reglas del juego.
+Todavía debemos escribir las pruebas automáticas del juego. El comando ya está disponible para ejecutarlas cuando las agreguemos.
 
-## 7. Estructura actual del repositorio
+## 7. Cómo organizamos los archivos
 
 ```text
 sonic-memory-card/
@@ -175,9 +179,9 @@ sonic-memory-card/
 └── README.md               # Este documento (al incorporarlo al repositorio)
 ```
 
-## 8. Arquitectura: actual y requerida
+## 8. Arquitectura que estamos construyendo
 
-**Arquitectura local actual:**
+**Así funciona nuestra configuración local actual:**
 
 ```text
 Navegador -> localhost:8000 -> Django runserver (web)
@@ -189,7 +193,7 @@ Navegador -> localhost:8000 -> Django runserver (web)
                          volumen postgres_data
 ```
 
-**Arquitectura obligatoria para producción (aún pendiente):**
+**Así planeamos organizar los servicios para la versión pública:**
 
 ```text
 Navegador (HTTPS)
@@ -207,11 +211,11 @@ PostgreSQL 16 (red backend privada)
 Volumen persistente para la base de datos
 ```
 
-Para cumplir la guía, solo el proxy debe exponer los puertos públicos; PostgreSQL no debe tener un mapeo `ports:`. También se necesitan volúmenes para archivos estáticos, usuario sin privilegios, healthchecks y límites de CPU/RAM.
+Cuando preparemos el despliegue, configuraremos el proxy para que sea el único servicio que publique puertos. Mantendremos PostgreSQL en una red interna e incorporaremos el almacenamiento de archivos estáticos, verificaciones de salud y límites de CPU y memoria.
 
-**El `docker-compose.yml` actual ejecuta `python manage.py runserver` y publica el puerto 8000**, por lo que **no debe usarse tal como está para desplegar en internet**.
+En este momento, `docker-compose.yml` ejecuta `python manage.py runserver` y publica el puerto 8000. **Eso nos sirve para desarrollo local, pero tendremos que cambiarlo antes de publicar el juego en internet.**
 
-## 9. Rutas exigidas por la guía (pendientes)
+## 9. Rutas que nos falta desarrollar
 
 | Método y ruta | Función |
 |---|---|
@@ -232,9 +236,9 @@ Para cumplir la guía, solo el proxy debe exponer los puertos públicos; Postgre
 | `GET /clasificacion/?nivel=facil` | Clasificación por dificultad |
 | `GET /salud/` | Comprobación del servicio y la base |
 
-Actualmente solo está registrada la ruta **`/admin/`**.
+De momento, la única ruta que tenemos registrada es **`/admin/`**. Iremos agregando las demás conforme desarrollemos el juego.
 
-## 10. Lista de trabajo para cumplir la guía
+## 10. Lo que nos falta completar
 
 ### Juego y usuarios
 
@@ -272,11 +276,11 @@ Actualmente solo está registrada la ruta **`/admin/`**.
 - [ ] Registrar los aportes del equipo mediante commits.
 - [ ] Documentar **URL pública y usuario de prueba** cuando existan, sin publicar contraseñas privadas.
 
-## 11. Despliegue y recuperación (procedimientos futuros)
+## 11. Cómo administraremos el proyecto al publicarlo
 
-Estos pasos **todavía no están habilitados** en la configuración publicada. Se usarán después de implementar y probar los servicios de producción de la sección 8.
+Cuando terminemos la versión local, prepararemos el despliegue en un servidor Linux. **Los siguientes comandos son parte del procedimiento que debemos implementar y probar**; todavía no funcionan todos con nuestra configuración actual.
 
-En el **servidor Linux**, se deberá verificar el estado de los servicios y preparar la base y los archivos estáticos:
+En el servidor utilizaremos comandos como estos para levantar los servicios y preparar la aplicación:
 
 ```bash
 docker compose build web
@@ -287,7 +291,7 @@ docker compose exec web python manage.py collectstatic --noinput
 docker compose exec web python manage.py check --deploy
 ```
 
-Para monitorear y diagnosticar:
+Para revisar el funcionamiento de los contenedores utilizaremos:
 
 ```bash
 docker compose logs -f web
@@ -297,7 +301,7 @@ docker network ls
 docker volume ls
 ```
 
-Para reiniciar la aplicación y actualizar conservando el volumen de base de datos:
+Para reiniciar y actualizar nuestra aplicación sin borrar los datos usaremos:
 
 ```bash
 docker compose restart web
@@ -307,11 +311,11 @@ docker compose up -d web
 docker compose exec web python manage.py migrate
 ```
 
-El procedimiento de respaldo utilizará `pg_dump` y el de recuperación `pg_restore`. Antes de ejecutarlos se deberán **probar con datos de ensayo**, establecer los nombres reales de las variables y conservar una copia fuera del servidor. Una restauración con `--clean` puede reemplazar datos existentes; **nunca se debe ejecutar sin confirmar el respaldo**.
+Para respaldar PostgreSQL usaremos `pg_dump`, y para recuperar la información, `pg_restore`. Primero practicaremos con datos de prueba y guardaremos una copia del respaldo fuera del servidor. Así podremos comprobar que los usuarios y las partidas se conservan incluso después de un problema o una actualización.
 
-## 12. Evaluación y fuentes
+## 12. Guía que utilizamos
 
-Esta implementación se desarrolla siguiendo la **Guía General del Proyecto Final de Arquitectura de Computadoras, UTH**, especialmente:
+Para organizar nuestro trabajo tomamos como referencia la **Guía General del Proyecto Final de Arquitectura de Computadoras de la UTH**, especialmente estas partes:
 
 - Sección 4: tecnologías, funcionalidades, estados, puntuación y rutas comunes.
 - Sección 5.1: ficha del **Proyecto 1, Memory Game**.
@@ -319,4 +323,6 @@ Esta implementación se desarrolla siguiendo la **Guía General del Proyecto Fin
 - Sección 8: pruebas comunes y automatizadas.
 - Secciones 10 a 14: revisiones, entregables, rúbrica y lista de verificación.
 
-**Aviso sobre recursos:** Sonic y sus personajes pertenecen a sus titulares de derechos. Este repositorio es un trabajo académico no oficial, sin afiliación con SEGA. Los materiales usados en el juego deben contar con autorización o licencias adecuadas y quedar atribuidos en `CREDITOS.md`.
+### Sobre la temática y los recursos
+
+Elegimos a Sonic como temática visual para nuestro juego. **Este es un proyecto universitario desarrollado por nuestro equipo, no un juego oficial de SEGA.** En `CREDITOS.md` indicaremos de dónde provienen las imágenes, la música y los sonidos que utilicemos, así como sus permisos o licencias de uso.
