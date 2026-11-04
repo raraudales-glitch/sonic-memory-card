@@ -1,0 +1,452 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+    <title>Mi perfil | Sonic Memory Card</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            padding: 25px;
+            font-family: Arial, Helvetica, sans-serif;
+            color: white;
+
+            background:
+                radial-gradient(
+                    circle at 20% 10%,
+                    rgba(0, 119, 255, .25),
+                    transparent 45%
+                ),
+                radial-gradient(
+                    circle at 80% 85%,
+                    rgba(0, 155, 255, .15),
+                    transparent 40%
+                ),
+                #050b18;
+        }
+
+        .contenedor {
+            max-width: 1050px;
+            margin: 0 auto;
+        }
+
+        .barra-superior {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 35px;
+            flex-wrap: wrap;
+        }
+
+        .marca {
+            font-size: 21px;
+            font-weight: 900;
+            letter-spacing: 1px;
+            color: #ffdf00;
+            text-shadow: 0 0 15px rgba(255, 223, 0, .35);
+        }
+
+        .volver {
+            display: inline-block;
+            padding: 12px 18px;
+            border: 1px solid #368bff;
+            border-radius: 9px;
+            background: #102c58;
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            text-decoration: none;
+            transition: .2s;
+        }
+
+        .volver:hover {
+            background: #174785;
+        }
+
+        .perfil-header {
+            padding: 32px;
+            margin-bottom: 28px;
+            border: 2px solid #277bff;
+            border-radius: 18px;
+            background: rgba(8, 24, 56, .94);
+            box-shadow: 0 0 30px rgba(0, 110, 255, .15);
+        }
+
+        .perfil-header h1 {
+            margin-bottom: 10px;
+            color: #ffdf00;
+            font-size: 32px;
+        }
+
+        .nombre {
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .detalle {
+            margin-top: 6px;
+            color: #b6cce9;
+            font-size: 14px;
+            overflow-wrap: anywhere;
+        }
+
+        .estado-activo {
+            display: inline-block;
+            margin-top: 18px;
+            padding: 9px 14px;
+            border-radius: 8px;
+            background: rgba(38, 185, 126, .12);
+            border: 1px solid #219c70;
+            color: #aaf9d7;
+            font-size: 13px;
+        }
+
+        .seccion {
+            margin-bottom: 30px;
+        }
+
+        .seccion h2 {
+            margin-bottom: 18px;
+            font-size: 24px;
+            color: #ffffff;
+        }
+
+        .estadisticas {
+            display: grid;
+            grid-template-columns:
+                repeat(4, minmax(0, 1fr));
+            gap: 15px;
+        }
+
+        .tarjeta {
+            min-width: 0;
+            padding: 24px 16px;
+            border: 1px solid #2868af;
+            border-radius: 14px;
+            background: rgba(12, 37, 77, .96);
+            text-align: center;
+        }
+
+        .tarjeta strong {
+            display: block;
+            margin-bottom: 9px;
+            color: #ffdf00;
+            font-size: 30px;
+            overflow-wrap: anywhere;
+        }
+
+        .tarjeta span {
+            color: #b7cbe7;
+            font-size: 13px;
+        }
+
+        .porcentaje {
+            margin-top: 16px;
+            padding: 22px;
+            border: 1px solid #2868af;
+            border-radius: 14px;
+            background: rgba(12, 37, 77, .96);
+        }
+
+        .porcentaje-cabecera {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .porcentaje-cabecera strong {
+            font-size: 21px;
+            color: #ffdf00;
+        }
+
+        .barra-porcentaje {
+            width: 100%;
+            height: 12px;
+            border-radius: 20px;
+            background: #243b60;
+            overflow: hidden;
+        }
+
+        .barra-relleno {
+            height: 100%;
+            border-radius: 20px;
+            background: linear-gradient(
+                90deg,
+                #168dff,
+                #ffdf00
+            );
+        }
+
+        .niveles {
+            display: grid;
+            grid-template-columns:
+                repeat(3, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .nivel {
+            min-width: 0;
+            padding: 25px;
+            border: 1px solid #2868af;
+            border-radius: 15px;
+            background: rgba(12, 37, 77, .96);
+        }
+
+        .nivel h3 {
+            margin-bottom: 20px;
+            color: #ffdf00;
+            font-size: 21px;
+        }
+
+        .fila {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid #29456e;
+            font-size: 14px;
+        }
+
+        .fila:last-child {
+            border-bottom: none;
+        }
+
+        .fila span {
+            color: #b5c9e5;
+        }
+
+        .fila strong {
+            text-align: right;
+            color: #ffffff;
+        }
+
+        .vacio {
+            padding: 25px;
+            border: 1px dashed #42638d;
+            border-radius: 12px;
+            color: #b6cce9;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .pie {
+            margin: 35px 0 10px;
+            text-align: center;
+            color: #8eaccf;
+            font-size: 12px;
+        }
+
+        @media (max-width: 850px) {
+            .estadisticas {
+                grid-template-columns:
+                    repeat(2, minmax(0, 1fr));
+            }
+
+            .niveles {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 14px;
+            }
+
+            .perfil-header {
+                padding: 22px;
+            }
+
+            .perfil-header h1 {
+                font-size: 26px;
+            }
+
+            .tarjeta {
+                padding: 20px 10px;
+            }
+
+            .tarjeta strong {
+                font-size: 25px;
+            }
+
+            .marca {
+                font-size: 17px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="contenedor">
+
+    <header class="barra-superior">
+        <div class="marca">
+            SONIC MEMORY CARD
+        </div>
+
+        <a
+            href="{% url 'memory:inicio' %}"
+            class="volver"
+        >
+            Volver al menú
+        </a>
+    </header>
+
+    <section class="perfil-header">
+        <h1>MI PERFIL</h1>
+
+        <div class="nombre">
+            {{ nombre }}
+        </div>
+
+        <p class="detalle">
+            Usuario: {{ username }}
+        </p>
+
+        <p class="detalle">
+            Correo: {{ correo }}
+        </p>
+
+        {% if partidas_activas %}
+        <div class="estado-activo">
+            Tienes una partida en curso
+        </div>
+        {% endif %}
+    </section>
+
+    <section class="seccion">
+
+        <h2>Estadísticas generales</h2>
+
+        <div class="estadisticas">
+
+            <div class="tarjeta">
+                <strong>{{ total }}</strong>
+                <span>Partidas jugadas</span>
+            </div>
+
+            <div class="tarjeta">
+                <strong>{{ victorias }}</strong>
+                <span>Victorias</span>
+            </div>
+
+            <div class="tarjeta">
+                <strong>{{ derrotas }}</strong>
+                <span>Derrotas</span>
+            </div>
+
+            <div class="tarjeta">
+                <strong>{{ mejor_puntaje }}</strong>
+                <span>Mejor puntuación</span>
+            </div>
+
+        </div>
+
+        <div class="porcentaje">
+            <div class="porcentaje-cabecera">
+                <span>Porcentaje de victorias</span>
+                <strong>
+                    {{ porcentaje_victorias|floatformat:1 }}%
+                </strong>
+            </div>
+
+            <div class="barra-porcentaje">
+                <div
+                    class="barra-relleno"
+                    style="width: {{ porcentaje_victorias }}%;"
+                ></div>
+            </div>
+        </div>
+
+    </section>
+
+    <section class="seccion">
+
+        <h2>Estadísticas por dificultad</h2>
+
+        <div class="niveles">
+
+            {% for nivel in niveles %}
+
+            <article class="nivel">
+
+                <h3>{{ nivel.nombre }}</h3>
+
+                <div class="fila">
+                    <span>Partidas</span>
+                    <strong>{{ nivel.total }}</strong>
+                </div>
+
+                <div class="fila">
+                    <span>Victorias</span>
+                    <strong>{{ nivel.victorias }}</strong>
+                </div>
+
+                <div class="fila">
+                    <span>Derrotas</span>
+                    <strong>{{ nivel.derrotas }}</strong>
+                </div>
+
+                <div class="fila">
+                    <span>Mejor puntuación</span>
+                    <strong>
+                        {{ nivel.mejor_puntaje }}
+                    </strong>
+                </div>
+
+                <div class="fila">
+                    <span>Tiempo promedio</span>
+
+                    <strong>
+                        {% if nivel.tiempo_promedio is not None %}
+                            {{ nivel.tiempo_promedio }} s
+                        {% else %}
+                            Sin partidas
+                        {% endif %}
+                    </strong>
+                </div>
+
+            </article>
+
+            {% endfor %}
+
+        </div>
+
+    </section>
+
+    {% if total == 0 %}
+    <div class="vacio">
+        Todavía no tienes partidas finalizadas.
+        Juega tu primera partida para comenzar
+        a registrar estadísticas.
+    </div>
+    {% endif %}
+
+    <footer class="pie">
+        Sonic Memory Card
+        <br>
+        Proyecto 1 - Arquitectura de Computadoras
+        <br>
+        Universidad Tecnológica de Honduras
+    </footer>
+
+</div>
+
+</body>
+</html>

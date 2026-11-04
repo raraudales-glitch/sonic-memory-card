@@ -1,14 +1,24 @@
 
 from django.urls import path
+
 from . import views
+from .estadisticas import perfil_jugador
+
 
 app_name = "memory"
+
 
 urlpatterns = [
     path(
         "",
         views.inicio,
         name="inicio"
+    ),
+
+    path(
+        "perfil/",
+        perfil_jugador,
+        name="perfil"
     ),
 
     path(
