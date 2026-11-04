@@ -1,25 +1,97 @@
+
 services:
   db:
     image: postgres:16
     restart: unless-stopped
+
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+    networks:
+      - backend
+
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+
   web:
     build: .
-    command: python manage.py runserver 0.0.0.0:8000
-    volumes:
-      - .:/app
-    ports:
-      - "8000:8000"
+    restart: unless-stopped
+
     env_file:
       - .env
+
+    command:
+      - sh
+      - -c
+      - >
+        python manage.py collectstatic --noinput &&
+        exec gunicorn config.wsgi:application
+        --bind 0.0.0.0:8000
+        --workers 3
+        --access-logfile -
+        --error-logfile -
+
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+
+    volumes:
+      - static_data:/app/staticfiles
+
+    networks:
+      - frontend
+      - backend
+
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+
+  proxy:
+    image: caddy:2
+    restart: unless-stopped
+
+    ports:
+      - "8080:80"
+
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - static_data:/srv/static:ro
+
+    networks:
+      - frontend
+
+    depends_on:
+      - web
+
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 128M
 
 volumes:
   postgres_data:
+  static_data:
+
+networks:
+  frontend:
+  backend:
+    internal: true
