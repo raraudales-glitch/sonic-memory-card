@@ -1,66 +1,86 @@
 # Créditos de recursos — Sonic Memory Card
 
-Somos el **Grupo 1, Proyecto 1: Memory Game**, de la asignatura **Arquitectura de Computadoras** de la **Universidad Tecnológica de Honduras (UTH)**. En nuestro juego utilizamos una temática inspirada en *Sonic the Hedgehog* y hemos elegido distintos recursos gráficos y sonoros para acompañarla.
+Somos el Grupo 1 de la asignatura Arquitectura de Computadoras de la Universidad Tecnológica de Honduras (UTH). Estamos desarrollando **Sonic Memory Card**, nuestro Proyecto 1 (Memory Game), con una temática inspirada en *Sonic the Hedgehog*.
 
-En este archivo dejamos constancia de los autores, las fuentes y el uso que damos o planeamos dar a cada recurso. Lo actualizaremos cuando incorporemos los archivos definitivos.
+En este documento registramos los recursos que hemos reunido para el juego y sus fuentes. Diferenciamos los materiales que estamos evaluando de los que ya incorporamos. Actualizaremos los créditos cuando confirmemos la procedencia exacta de cada archivo.
 
-## 1. Imágenes y personajes
+## 1. Imágenes de personajes
 
-Para el diseño de las cartas hemos tomado imágenes de personajes de Sonic que encontramos en publicaciones oficiales de **SEGA**.
+Para nuestras cartas reunimos imágenes de personajes del universo de Sonic. Consultamos publicaciones de SEGA y estas páginas compartidas durante el desarrollo:
 
-- **Franquicia:** Sonic the Hedgehog.
-- **Procedencia:** Publicaciones oficiales de SEGA.
-- **Uso previsto:** Imágenes de los personajes en las cartas y elementos visuales de nuestro juego.
-- **Enlaces de las publicaciones utilizadas:** Pendientes 
+- **Amy Rose:** [Meshy — Amyrose](https://www.meshy.ai/es/tags/amyrose).
+- **Ilustraciones y referencias de artistas:** [DeviantArt — referencia compartida](https://www.deviantart.com/morelikethis/Detexki99/887111286).
+- **Blaze the Cat:** [Wikijuegos — Blaze the Cat](https://videojuegos.fandom.com/es/wiki/Blaze_the_Cat).
+- **Otros personajes:** artículos y galerías de *Sonic* en Fandom. Como punto de partida utilizamos la misma estructura de dirección que la página de Blaze, sustituyendo el nombre del personaje; debemos comprobar que cada página exista y, especialmente, que contenga la imagen exacta utilizada.
 
-Reconocemos a SEGA como titular de los personajes y marcas de Sonic. Que una imagen se haya publicado en una cuenta oficial no significa que su reutilización esté autorizada; verificaremos esos permisos antes de distribuir los archivos en una versión pública del juego.
+### Personajes de nuestro mazo
+
+| Archivo | Personaje | Procedencia por comprobar |
+|---|---|---|
+| `amy.png` | Amy Rose | Meshy y/o publicación original de la imagen |
+| `belle.png` | Belle | Página y autor de la ilustración |
+| `blaze.png` | Blaze the Cat | Fandom: enlace de Blaze indicado arriba |
+| `eggman.png` | Doctor Eggman | Página y autor de la ilustración |
+| `jewel.png` | Jewel | Página y autor de la ilustración |
+| `kit.png` | Kit | Página y autor de la ilustración |
+| `knuckles.png` | Knuckles | Página y autor de la ilustración |
+| `lanolin.png` | Lanolin | Página y autor de la ilustración |
+| `metal-sonic.png` | Metal Sonic | Página y autor de la ilustración |
+| `mimic.png` | Mimic | Página y autor de la ilustración |
+| `rouge.png` | Rouge | Página y autor de la ilustración |
+| `shadow.png` | Shadow | Página y autor de la ilustración |
+| `silver.png` | Silver | Página y autor de la ilustración |
+| `sonic.png` | Sonic the Hedgehog | Artículo de Sonic en Fandom u origen de la imagen |
+| `surge.png` | Surge | Página y autor de la ilustración |
+| `tails.png` | Tails | Página y autor de la ilustración |
+| `tangle.png` | Tangle | Página y autor de la ilustración |
+| `whisper.png` | Whisper | Página y autor de la ilustración |
+
+**Nota:** las páginas de Meshy, DeviantArt y Fandom sirven para identificar las fuentes consultadas; no hemos confirmado que cada ilustración de los archivos anteriores proceda exactamente de esas páginas. También debemos distinguir el propietario del personaje del autor de una ilustración concreta. Estar publicada en internet no significa que una imagen tenga autorización para redistribuirse en nuestro juego.
 
 ## 2. Música seleccionada
 
-Elegimos estas canciones porque queremos que el juego tenga una ambientación reconocible de Sonic: un menú relajado, una partida con más energía y una alerta cuando el tiempo esté por terminar.
+Queremos que la ambientación cambie con el desarrollo de la partida: música tranquila en el menú, música energética mientras jugamos y una alerta cuando se agota el tiempo.
 
-| Momento | Canción | Videojuego | Referencia / fuente | Estado |
+| Momento | Canción | Videojuego | Fuente de referencia | Estado |
 |---|---|---|---|---|
-| Menú principal | Chao Garden Extended Mix | Sonic Adventure 2 | https://sst.sega.jp/catalog/s065.html | Seleccionada; pendiente de autorización para incorporarla públicamente |
-| Durante la partida | Lights, Camera, Action! (Studiopolis Zone Act 1) | Sonic Mania | https://www.youtube.com/watch?v=NIWyZmFSep0 | Seleccionada; pendiente de autorización para incorporarla públicamente |
-| Últimos 15 segundos | Drowning Theme | Sonic the Hedgehog (1991) | Archivo de referencia: `sonic-1-music-drownings.mp3` | Archivo de referencia disponible; pendiente de autorización para incorporarlo públicamente |
+| Menú principal | Chao Garden Extended Mix | Sonic Adventure 2 | [Catálogo oficial de SEGA](https://sst.sega.jp/catalog/s065.html) | **Seleccionada para nuestro proyecto académico sin fines comerciales.** |
+| Durante la partida | Lights, Camera, Action! (Studiopolis Zone Act 1) | Sonic Mania | [Video de referencia](https://www.youtube.com/watch?v=NIWyZmFSep0) | **Seleccionada para nuestro proyecto académico sin fines comerciales.** |
+| Últimos 15 segundos | Drowning Theme | Sonic the Hedgehog (1991) | Archivo de referencia `sonic-1-music-drownings.mp3` | **Seleccionada para nuestro proyecto académico sin fines comerciales.** |
 
-**Créditos musicales:** *Lights, Camera, Action!* fue compuesta por **Tee Lopes** para *Sonic Mania*. Las bandas sonoras originales de *Sonic Adventure 2* y *Sonic the Hedgehog* están vinculadas a sus respectivos creadores y titulares de derechos.
+La música de la partida sonará a velocidad normal y, cuando queden **30 segundos**, aumentará progresivamente su ritmo. A los **15 segundos** cambiará a la alerta de ahogamiento. Al ganar o perder, reproduciremos el efecto correspondiente.
 
-Tenemos pensado que, cuando falten **30 segundos**, la música de la partida aumente gradualmente su ritmo y que, a los **15 segundos**, cambie a la alerta de ahogamiento. Al ganar o perder, la música se detendrá y reproduciremos el efecto correspondiente.
-
-Estas son nuestras **elecciones musicales**, no una declaración de que tengamos permiso para distribuir las grabaciones. Comprar o descargar una canción, enlazar un video o mencionar a su autor no equivale a obtener autorización para incluirla en el repositorio o en un juego publicado. Hasta contar con los permisos necesarios, utilizaremos música alternativa con licencia adecuada en la versión pública.
+Estas canciones forman parte de nuestra selección musical para el proyecto académico, que no tiene fines comerciales. Las canciones y grabaciones originales pertenecen a sus respectivos titulares de derechos; el carácter académico del proyecto no concede por sí solo permisos de distribución.
 
 ## 3. Efectos de sonido
 
 ### ROHHSA — NETCROSIS VOLUME ONE
 
-- **Autor:** ROHHSA.
+- **Creador:** ROHHSA.
 - **Paquete:** NETCROSIS VOLUME ONE.
-- **Fuente indicada por el autor:** https://payhip.com/rohhsa
-- **Uso previsto:** Efectos de interacción, volteo de cartas, aciertos y errores; los archivos definitivos aún están por seleccionar.
-- **Condiciones:** El `README.txt` del paquete indica que podemos utilizar sus sonidos y que mencionar al autor no es obligatorio, aunque sí es bienvenido.
-
-Agradecemos a ROHHSA por los efectos de sonido que compartió.
+- **Fuente:** https://payhip.com/rohhsa
+- **Uso previsto:** sonidos al voltear cartas, acertar, fallar y navegar por el juego.
+- **Crédito:** opcional según el `README.txt` incluido en el paquete, pero decidimos mencionar a su creador.
 
 ### Chequered Ink — 400 Sounds Pack
 
-- **Autor:** Chequered Ink.
+- **Creador:** Chequered Ink.
 - **Paquete:** 400 Sounds Pack.
 - **Fuente:** https://ci.itch.io/400-sounds-pack
-- **Estado:** Alternativa que estamos considerando para efectos de interfaz y de cartas. Todavía no hemos definido qué archivos incorporaremos.
-- **Licencia:** Revisaremos las condiciones incluidas con la descarga antes de agregar efectos al repositorio.
+- **Uso previsto:** efectos de interfaz, cartas y resultados.
+- **Estado:** paquete en evaluación; registraremos los archivos definitivos y sus condiciones cuando los seleccionemos.
 
 ### JDSherbert — Recursos por confirmar
 
-Tenemos una licencia de recursos de **JDSherbert**, pero todavía no hemos identificado un archivo de ese autor que vayamos a utilizar en el juego. Si lo incorporamos, añadiremos el nombre del recurso y el crédito exigido:
+Disponemos de un documento de licencia de JDSherbert, aunque todavía debemos identificar si incorporaremos alguno de sus sonidos.
 
-**Sounds by JDSherbert — https://jdsherbert.itch.io**
+- **Crédito exigido si utilizamos sus recursos:** Sounds by JDSherbert — https://jdsherbert.itch.io
+- **Condición importante:** no redistribuir los archivos originales como paquete independiente.
 
-La licencia de JDSherbert se aplica solamente a los recursos creados por ese autor y no a las canciones de Sonic ni a los sonidos de otros paquetes.
+La licencia de JDSherbert no se aplica a las canciones de SEGA ni a los sonidos creados por ROHHSA o Chequered Ink.
 
-## 4. Cómo registraremos los recursos definitivos
+## 4. Uso académico y actualización de créditos
 
-Cuando terminemos de escoger las canciones, imágenes y efectos, añadiremos para cada archivo su **nombre, autor, enlace original, licencia o permiso de uso y modificaciones realizadas**, si las hubiera.
+Desarrollamos Sonic Memory Card como proyecto académico de la UTH, sin intención de comercializarlo. Reconocemos que *Sonic the Hedgehog*, sus personajes, música y otros elementos originales pertenecen a sus titulares de derechos.
 
-Este es un **proyecto académico no oficial** realizado por nuestro grupo. Respetaremos las condiciones de los recursos de terceros y evitaremos subir grabaciones o imágenes cuya redistribución no esté autorizada.
+Registraremos para cada recurso su **nombre, autor o titular, URL de origen, condiciones de uso y modificaciones realizadas**. Mantendremos este archivo actualizado junto con nuestro `README.md`.
