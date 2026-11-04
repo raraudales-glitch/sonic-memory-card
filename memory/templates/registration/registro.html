@@ -1,0 +1,334 @@
+
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Crear cuenta | Sonic Memory Card</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 24px;
+            font-family: Arial, Helvetica, sans-serif;
+            color: white;
+            background:
+                radial-gradient(
+                    circle at 50% 10%,
+                    #1652a5,
+                    transparent 55%
+                ),
+                linear-gradient(
+                    145deg,
+                    #06142e,
+                    #091b41,
+                    #030714
+                );
+        }
+
+        .registro-container {
+            width: 100%;
+            max-width: 480px;
+            padding: 35px 32px;
+            border: 2px solid #2588ff;
+            border-radius: 18px;
+            background: rgba(5, 15, 38, .96);
+            box-shadow: 0 0 35px rgba(0, 119, 255, .25);
+        }
+
+        .titulo {
+            color: #ffdf00;
+            text-align: center;
+            font-size: 30px;
+            font-weight: 900;
+            text-shadow: 2px 3px 0 #b17a00;
+        }
+
+        .subtitulo {
+            margin-top: 12px;
+            margin-bottom: 28px;
+            color: #c3d8fa;
+            font-size: 14px;
+            line-height: 1.7;
+            text-align: center;
+        }
+
+        .campo {
+            margin-bottom: 19px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        input {
+            width: 100%;
+            padding: 13px;
+            border: 1px solid #31517f;
+            border-radius: 8px;
+            color: white;
+            background: #101f39;
+            font-size: 15px;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: #ffdf00;
+            box-shadow: 0 0 8px rgba(255, 223, 0, .3);
+        }
+
+        .ayuda {
+            margin-top: 7px;
+            color: #a0b4d2;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .error {
+            margin-top: 8px;
+            padding: 10px;
+            border: 1px solid #ff6464;
+            border-radius: 7px;
+            background: rgba(255, 60, 60, .12);
+            color: #ffc5c5;
+            font-size: 13px;
+        }
+
+        .error ul {
+            margin: 5px 0 0 18px;
+        }
+
+        .error-general {
+            margin-bottom: 20px;
+        }
+
+        .boton {
+            display: block;
+            width: 100%;
+            margin-top: 25px;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            background: #ffdf00;
+            color: #09132b;
+            font-size: 16px;
+            font-weight: 900;
+            cursor: pointer;
+            transition: .2s;
+        }
+
+        .boton:hover {
+            background: #ffe94c;
+            transform: translateY(-2px);
+        }
+
+        .volver {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #28446f;
+            text-align: center;
+        }
+
+        .volver p {
+            color: #c3d8fa;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .volver a {
+            color: #ffdf00;
+            font-size: 15px;
+            font-weight: bold;
+            text-decoration: none;
+        }
+
+        .volver a:hover {
+            color: #fff18a;
+            text-decoration: underline;
+        }
+
+        .pie {
+            margin-top: 28px;
+            color: #a0b4d2;
+            text-align: center;
+            font-size: 12px;
+            line-height: 1.8;
+        }
+
+        @media (max-width: 480px) {
+            .registro-container {
+                padding: 28px 20px;
+            }
+
+            .titulo {
+                font-size: 25px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <main class="registro-container">
+
+        <h1 class="titulo">SONIC</h1>
+
+        <p class="subtitulo">
+            MEMORY CARD
+            <br>
+            Crea tu cuenta para comenzar a jugar
+        </p>
+
+        {% if form.non_field_errors %}
+        <div class="error error-general" role="alert">
+            {{ form.non_field_errors }}
+        </div>
+        {% endif %}
+
+        <form method="post" action="{% url 'registro' %}">
+
+            {% csrf_token %}
+
+            <div class="campo">
+                <label for="nombre">
+                    Nombre completo
+                </label>
+
+                <input
+                    type="text"
+                    id="nombre"
+                    name="nombre"
+                    value="{{ form.nombre.value|default_if_none:'' }}"
+                    placeholder="Introduce tu nombre"
+                    autocomplete="name"
+                    maxlength="150"
+                    required
+                    autofocus
+                >
+
+                {% if form.nombre.errors %}
+                <div class="error" role="alert">
+                    {{ form.nombre.errors }}
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="campo">
+                <label for="correo">
+                    Correo electrónico
+                </label>
+
+                <input
+                    type="email"
+                    id="correo"
+                    name="correo"
+                    value="{{ form.correo.value|default_if_none:'' }}"
+                    placeholder="correo@ejemplo.com"
+                    autocomplete="email"
+                    maxlength="150"
+                    required
+                >
+
+                {% if form.correo.errors %}
+                <div class="error" role="alert">
+                    {{ form.correo.errors }}
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="campo">
+                <label for="contrasena1">
+                    Contraseña
+                </label>
+
+                <input
+                    type="password"
+                    id="contrasena1"
+                    name="contrasena1"
+                    placeholder="Crea una contraseña"
+                    autocomplete="new-password"
+                    minlength="8"
+                    required
+                >
+
+                <p class="ayuda">
+                    Utiliza al menos 8 caracteres.
+                    Evita contraseñas comunes o demasiado
+                    parecidas a tus datos personales.
+                </p>
+
+                {% if form.contrasena1.errors %}
+                <div class="error" role="alert">
+                    {{ form.contrasena1.errors }}
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="campo">
+                <label for="contrasena2">
+                    Confirmar contraseña
+                </label>
+
+                <input
+                    type="password"
+                    id="contrasena2"
+                    name="contrasena2"
+                    placeholder="Repite tu contraseña"
+                    autocomplete="new-password"
+                    minlength="8"
+                    required
+                >
+
+                {% if form.contrasena2.errors %}
+                <div class="error" role="alert">
+                    {{ form.contrasena2.errors }}
+                </div>
+                {% endif %}
+            </div>
+
+            <button type="submit" class="boton">
+                CREAR CUENTA
+            </button>
+
+        </form>
+
+        <div class="volver">
+
+            <p>¿Ya tienes una cuenta?</p>
+
+            <a href="{% url 'login' %}">
+                Iniciar sesión
+            </a>
+
+        </div>
+
+        <p class="pie">
+            Sonic Memory Card
+            <br>
+            Proyecto 1 - Arquitectura de Computadoras
+            <br>
+            Universidad Tecnológica de Honduras
+        </p>
+
+    </main>
+
+</body>
+</html>
