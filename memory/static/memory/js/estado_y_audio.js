@@ -347,7 +347,7 @@
 
             if (
                 fraseVisible &&
-                Date.now() - inicioEspera < 4500
+                Date.now() - inicioEspera < 600
             ) {
                 setTimeout(cuandoCierreFrase, 200);
                 return;
@@ -528,7 +528,7 @@
 
     }, 250);
 
-    setInterval(actualizarDesdeServidor, 2000);
+    setInterval(actualizarDesdeServidor, 500);
 
     actualizarDesdeServidor();
     reproducirSegunTiempo();

@@ -34,6 +34,18 @@ urlpatterns = [
     ),
 
     path(
+        "partidas/<uuid:partida_id>/vista-previa/",
+        views.vista_previa,
+        name="vista_previa"
+    ),
+
+    path(
+        "partidas/<uuid:partida_id>/vista-previa/<int:posicion>/",
+        views.carta_vista_previa,
+        name="carta_vista_previa"
+    ),
+
+    path(
         "partidas/<uuid:partida_id>/voltear/",
         views.voltear,
         name="voltear"
