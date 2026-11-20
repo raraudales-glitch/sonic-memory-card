@@ -1,10 +1,12 @@
 
 from django.contrib.auth.decorators import login_required
-from django.db.models import Avg, Count, Max, Q
+from django.db.models import Avg, Case, Count, F, IntegerField, Max, Q, When
 from django.shortcuts import render
+from django.utils import timezone
+from django.views.decorators.http import require_GET
 
 from .models import Partida, PerfilJugador
-from .services import consultar_partida
+from .services import partida_vencida
 
 
 ESTADOS_FINALES = [
@@ -22,39 +24,38 @@ DIFICULTADES = [
 
 
 @login_required
+@require_GET
 def perfil_jugador(request):
 
     usuario = request.user
 
-    perfil, creado = PerfilJugador.objects.get_or_create(
-        usuario=usuario,
-        defaults={
-            "alias": usuario.username
-        }
-    )
+    alias = PerfilJugador.objects.filter(usuario=usuario).values_list("alias", flat=True).first()
 
     nombre = (
         usuario.get_full_name().strip()
-        or perfil.alias
+        or alias
         or usuario.username
     )
 
-    partidas_activas = Partida.objects.filter(
-        usuario=usuario,
-        practica=False,
-        estado="EN_CURSO"
-    )
+    oficiales = Partida.objects.filter(usuario=usuario, practica=False)
+    activa = oficiales.filter(estado=Partida.Estado.EN_CURSO).first()
+    ahora = timezone.now()
+    vencida = activa is not None and partida_vencida(activa, ahora)
 
-    for partida_id in list(
-        partidas_activas.values_list("id", flat=True)
-    ):
-        consultar_partida(usuario, partida_id)
+    finales = Q(estado__in=ESTADOS_FINALES)
+    derrotadas = Q(estado__in=[Partida.Estado.PERDIDA, Partida.Estado.TIEMPO_AGOTADO, Partida.Estado.ABANDONADA])
+    duracion = F("duracion_segundos")
+    if vencida:
+        pendiente = Q(pk=activa.pk, estado=Partida.Estado.EN_CURSO)
+        finales |= pendiente
+        derrotadas |= pendiente
+        duracion = Case(
+            When(pendiente, then=int((ahora - activa.inicio_servidor).total_seconds())),
+            default=duracion,
+            output_field=IntegerField(),
+        )
 
-    partidas = Partida.objects.filter(
-        usuario=usuario,
-        practica=False,
-        estado__in=ESTADOS_FINALES
-    )
+    partidas = oficiales.filter(finales)
 
     resumen = partidas.aggregate(
         total=Count("id"),
@@ -66,13 +67,7 @@ def perfil_jugador(request):
 
         derrotas=Count(
             "id",
-            filter=Q(
-                estado__in=[
-                    "PERDIDA",
-                    "TIEMPO_AGOTADO",
-                    "ABANDONADA",
-                ]
-            )
+            filter=derrotadas
         ),
 
         mejor_puntaje=Max(
@@ -112,7 +107,7 @@ def perfil_jugador(request):
             ),
 
             tiempo_promedio=Avg(
-                "duracion_segundos"
+                duracion
             ),
         )
 
@@ -145,11 +140,7 @@ def perfil_jugador(request):
         "derrotas": derrotas,
         "mejor_puntaje": mejor_puntaje,
         "porcentaje_victorias": porcentaje_victorias,
-        "partidas_activas": Partida.objects.filter(
-            usuario=usuario,
-            practica=False,
-            estado="EN_CURSO"
-        ).count(),
+        "partidas_activas": int(activa is not None and not vencida),
         "niveles": niveles,
     }
 

@@ -468,7 +468,21 @@
                 );
             }
 
-            const datos = await respuesta.json();
+            let datos = await respuesta.json();
+
+            if (datos.cierre_pendiente) {
+                const cierre = await fetch(`${prefijo}estado/`, {
+                    method: "POST",
+                    credentials: "same-origin",
+                    headers: {
+                        "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value
+                    }
+                });
+                if (!cierre.ok) {
+                    throw new Error(`HTTP ${cierre.status}`);
+                }
+                datos = await cierre.json();
+            }
 
             estado = datos.estado;
 

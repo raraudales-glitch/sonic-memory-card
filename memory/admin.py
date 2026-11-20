@@ -69,6 +69,10 @@ class PartidaAdmin(admin.ModelAdmin):
         "inicio_servidor",
     )
 
+    def get_exclude(self, request, obj=None):
+        if not self.has_change_permission(request, obj):
+            return ("estado_juego", "semilla")
+        return super().get_exclude(request, obj)
 
 @admin.register(Movimiento)
 class MovimientoAdmin(admin.ModelAdmin):

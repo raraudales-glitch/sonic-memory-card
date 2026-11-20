@@ -7,3 +7,17 @@ db.sqlite3
 .env
 
 /Microsoft/
+
+*.sqlite
+*.sqlite3
+*.sqlite3-*
+*.dump
+*.backup
+*.tmp
+.env.*
+!.env.example
+*.db
+*.db-*
+*.bak
+*.sql.gz
+*.log

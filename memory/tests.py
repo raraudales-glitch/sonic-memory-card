@@ -1,5 +1,6 @@
 import json
 from datetime import timedelta
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
@@ -58,9 +59,11 @@ class ModoPracticaTests(TestCase):
                 tablero = self.client.get(reverse("memory:jugar_partida", args=[partida.id]))
                 self.assertContains(tablero, 'data-practica="true"')
                 self.assertContains(tablero, 'class="carta"', count=2 * nivel["parejas"])
-                previa = self.client.get(reverse("memory:vista_previa", args=[partida.id]))
+                previa = self.client.post(reverse("memory:vista_previa", args=[partida.id]))
                 self.assertEqual(previa.json()["activa"], nivel["vista_previa"] > 0)
-                self.assertEqual(self.jugar_parejas(partida)["puntaje"], 0)
+                despues_previa = timezone.now() + timedelta(seconds=nivel["vista_previa"])
+                with patch("memory.services.timezone.now", return_value=despues_previa):
+                    self.assertEqual(self.jugar_parejas(partida)["puntaje"], 0)
                 self.assertEqual(partida.puntaje, 0)
 
         perfil = self.client.get(reverse("memory:perfil")).context

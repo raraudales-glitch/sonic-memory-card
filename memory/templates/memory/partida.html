@@ -159,7 +159,7 @@
                 <strong id="tiempo-juego">{{ partida.limite_segundos }}s</strong>
             </div>
             <div class="dato">
-                <span>Fallos</span>
+                <span>Fallos permitidos</span>
                 <strong><span id="fallos-actuales">{{ partida.errores }}</span> / {{ nivel.fallos }}</strong>
             </div>
             <a href="{% url 'memory:inicio' %}{% if partida.practica %}?practica=1{% endif %}" class="btn-salir">Salir</a>
@@ -169,7 +169,7 @@
     <main class="zona-juego">
         <h1>Encuentra las parejas</h1>
         <p class="subtitulo">
-            {% if partida.practica %}Modo práctica · {% endif %}{{ nivel.filas }} × {{ nivel.columnas }} · {{ nivel.parejas }} parejas
+            {% if partida.practica %}Modo práctica · {% endif %}{{ nivel.filas }} × {{ nivel.columnas }} · {{ nivel.parejas }} parejas · Derrota en el fallo {{ nivel.fallos|add:1 }}
         </p>
         <div class="tablero columnas-{{ nivel.columnas }}">
             {% for posicion in posiciones %}
@@ -316,8 +316,8 @@
     </script>
 
 <script src="{% static 'memory/js/efectos_y_frases.js' %}"></script>
-<script src="{% static 'memory/js/estado_y_audio.js' %}?v=11"></script>
+<script src="{% static 'memory/js/estado_y_audio.js' %}?v=12"></script>
 <script src="{% static 'memory/js/menu_opciones.js' %}?v=6"></script>
-<script src="{% static 'memory/js/vista_previa.js' %}?v=1"></script>
+<script src="{% static 'memory/js/vista_previa.js' %}?v=2"></script>
 </body>
 </html>

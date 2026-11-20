@@ -84,11 +84,16 @@ def cerrar_partida(partida, resultado, ahora=None):
     partida.save(update_fields=["estado", "fin_servidor", "duracion_segundos", "puntaje"])
 
 
+def partida_vencida(partida, ahora):
+    return (
+        partida.estado == Partida.Estado.EN_CURSO
+        and (ahora - partida.inicio_servidor).total_seconds() > partida.limite_segundos + 2
+    )
+
+
 def verificar_vencimiento(partida, ahora=None):
     ahora = ahora or timezone.now()
-    segundos_transcurridos = (ahora - partida.inicio_servidor).total_seconds()
-    # Dos segundos de tolerancia para solicitudes que ya estaban en tránsito.
-    if partida.estado == Partida.Estado.EN_CURSO and segundos_transcurridos > partida.limite_segundos + 2:
+    if partida_vencida(partida, ahora):
         cerrar_partida(partida, Partida.Estado.TIEMPO_AGOTADO, ahora)
     return partida
 
@@ -98,7 +103,20 @@ def datos_carta(posicion, clave, catalogo):
     return {"posicion": posicion, "clave": personaje.clave, "nombre": personaje.nombre, "imagen": personaje.imagen}
 
 
-def estado_publico(partida):
+def segundos_previa_restantes(partida, ahora):
+    marca = partida.estado_juego.get("vista_previa_inicio")
+    if partida.estado != Partida.Estado.EN_CURSO or not marca or partida.movimientos:
+        return 0
+
+    nivel = obtener_nivel(partida.dificultad)
+    tiempo_previa = nivel["vista_previa"] - (ahora.timestamp() - marca)
+    tiempo_partida = partida.limite_segundos - (ahora - partida.inicio_servidor).total_seconds()
+    return max(0, min(tiempo_previa, tiempo_partida))
+
+
+def estado_publico(partida, ahora=None):
+    ahora = ahora or timezone.now()
+    vencida = partida_vencida(partida, ahora)
     nivel = obtener_nivel(partida.dificultad)
     estado = partida.estado_juego
     orden = estado.get("orden", [])
@@ -109,8 +127,9 @@ def estado_publico(partida):
     return {
         "ok": True,
         "id": str(partida.id),
-        "estado": partida.estado,
-        "tiempo_restante": tiempo_restante(partida),
+        "estado": Partida.Estado.TIEMPO_AGOTADO if vencida else partida.estado,
+        "cierre_pendiente": vencida,
+        "tiempo_restante": tiempo_restante(partida, ahora),
         "fallos": partida.errores,
         "fallos_maximos": nivel["fallos"],
         "parejas_encontradas": len(estado.get("emparejadas", [])) // 2,
@@ -141,11 +160,17 @@ def crear_partida(usuario, dificultad, *, practica=False):
                                   semilla=semilla, practica=practica)
 
 
-@transaction.atomic
 def consultar_partida(usuario, partida_id):
-    partida = Partida.objects.select_for_update().get(id=partida_id, usuario=usuario)
-    verificar_vencimiento(partida)
+    partida = Partida.objects.get(id=partida_id, usuario=usuario)
     return estado_publico(partida)
+
+
+@transaction.atomic
+def confirmar_vencimiento(usuario, partida_id):
+    partida = Partida.objects.select_for_update().get(id=partida_id, usuario=usuario)
+    ahora = timezone.now()
+    verificar_vencimiento(partida, ahora)
+    return estado_publico(partida, ahora)
 
 
 @transaction.atomic
@@ -160,33 +185,37 @@ def abandonar_partida(usuario, partida_id):
 @transaction.atomic
 def voltear_carta(usuario, partida_id, posicion, seq_num):
     partida = Partida.objects.select_for_update().get(id=partida_id, usuario=usuario)
-    try:
-        seq_num = int(seq_num)
-        posicion = int(posicion)
-    except (ValueError, TypeError):
-        raise ErrorJugada("Posición o secuencia inválida")
-    if seq_num < 1:
-        raise ErrorJugada("La secuencia debe ser positiva")
+    nivel = obtener_nivel(partida.dificultad)
+    orden = partida.estado_juego["orden"]
+    if type(posicion) is not int or not 0 <= posicion < len(orden):
+        raise ErrorJugada("Posición inválida")
+    max_movimientos = 2 * (nivel["parejas"] + nivel["fallos"] + 1)
+    if type(seq_num) is not int or not 1 <= seq_num <= max_movimientos:
+        raise ErrorJugada("Secuencia inválida")
 
     anterior = Movimiento.objects.filter(partida=partida, numero=seq_num).first()
     if anterior:
-        return anterior.datos
+        datos = anterior.datos
+        carta = datos["carta"] if datos["tipo"] == "primera" else datos["cartas"][-1]
+        if carta["posicion"] != posicion:
+            raise ErrorJugada("La secuencia ya se usó con otra carta", 409)
+        return datos
 
-    verificar_vencimiento(partida)
+    ahora = timezone.now()
+    verificar_vencimiento(partida, ahora)
     if partida.estado != Partida.Estado.EN_CURSO:
         return {"ok": False, "error": "La partida ya terminó", "estado": partida.estado, "tiempo_restante": 0, "puntaje": partida.puntaje}
     if seq_num != partida.movimientos + 1:
         raise ErrorJugada("Número de secuencia fuera de orden", 409)
 
+    if segundos_previa_restantes(partida, ahora) > 0:
+        raise ErrorJugada("Espera a que termine la vista previa", 409)
+
     estado = dict(partida.estado_juego)
-    orden = estado["orden"]
     emparejadas = list(estado.get("emparejadas", []))
     visibles = list(estado.get("visibles", []))
-    ahora = timezone.now()
     if estado.get("bloqueado_hasta") and ahora.timestamp() < estado["bloqueado_hasta"]:
         raise ErrorJugada("Espera a que las cartas se oculten", 409)
-    if not 0 <= posicion < len(orden):
-        raise ErrorJugada("Posición fuera del tablero")
     if posicion in emparejadas or posicion in visibles:
         raise ErrorJugada("Esta carta ya está descubierta")
 
@@ -226,13 +255,12 @@ def voltear_carta(usuario, partida_id, posicion, seq_num):
     partida.movimientos += 1
     partida.save(update_fields=["estado_juego", "errores", "movimientos"])
 
-    nivel = obtener_nivel(partida.dificultad)
     if len(estado.get("emparejadas", [])) == 2 * nivel["parejas"]:
         cerrar_partida(partida, Partida.Estado.GANADA, ahora)
     elif partida.errores > nivel["fallos"]:
         cerrar_partida(partida, Partida.Estado.PERDIDA, ahora)
 
-    respuesta.update({"estado": partida.estado, "tiempo_restante": tiempo_restante(partida),
+    respuesta.update({"estado": partida.estado, "tiempo_restante": tiempo_restante(partida, ahora),
                       "puntaje": partida.puntaje, "fallos": partida.errores,
                       "parejas_encontradas": len(estado.get("emparejadas", [])) // 2})
     Movimiento.objects.create(partida=partida, numero=seq_num, tipo="VOLTEAR", datos=respuesta)

@@ -53,7 +53,11 @@
             const respuesta = await fetch(
                 `/partidas/${id}/vista-previa/`,
                 {
+                    method: "POST",
                     credentials: "same-origin",
+                    headers: {
+                        "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value
+                    },
                     cache: "no-store"
                 }
             );

@@ -151,6 +151,10 @@ class Partida(models.Model):
                 fields=["usuario", "practica"],
                 condition=Q(estado="EN_CURSO"),
                 name="una_partida_en_curso_por_usuario_y_modo"
+            ),
+            models.CheckConstraint(
+                condition=Q(practica=False) | Q(puntaje=0),
+                name="partida_practica_sin_puntaje"
             )
         ]
 

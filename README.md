@@ -85,7 +85,7 @@ Haremos que Django calcule y guarde el puntaje **una sola vez**. Si el jugador r
 
 - **Git** instalado.
 - **Docker Desktop** con el motor Linux activo, o Docker Engine con Compose v2.
-- Puerto **8000** disponible.
+- Puerto **8081** disponible.
 - No se requiere instalar Python ni PostgreSQL en el equipo si se utiliza Docker.
 
 ### Instalación con PowerShell (Windows)
@@ -133,18 +133,29 @@ docker compose ps
 docker compose exec web python manage.py migrate
 ```
 
-**5. Crear un administrador:**
+**5. Cargar los 18 personajes iniciales:**
 
 ```powershell
-docker compose exec web python manage.py createsuperuser
+docker compose exec web python manage.py cargar_personajes
 ```
 
-**6. Abrir el panel:**
+**6. Configurar las cuentas iniciales:**
 
-- Administración: **http://localhost:8000/admin/**
-- La ruta `http://localhost:8000/` todavía **no está implementada** y puede devolver **404**.
+```powershell
+docker compose exec web python manage.py crear_usuarios_iniciales
+```
 
-Por ahora, con esta instalación podemos revisar el panel administrativo y comprobar los modelos y la conexión con PostgreSQL. **El juego de cartas todavía está en desarrollo.**
+Ejecuta el comando en una terminal interactiva. Django solicita y confirma en privado la contraseña de cada cuenta nueva con la entrada oculta. Las cuentas existentes conservan sus contraseñas, partidas y perfiles. El comando se puede repetir y muestra las cuentas creadas, los permisos actualizados y los perfiles verificados.
+
+Cada instalación usa su propia base de datos PostgreSQL de Docker y configura sus credenciales de forma privada. Conserva el archivo `.env` en tu equipo.
+
+**7. Abrir el panel administrativo y comprobar los permisos:**
+
+Abre [el panel administrativo](http://localhost:8081/admin/) e inicia sesión con `ADMIN` para verificar que puedes administrar usuarios, grupos y todos los modelos.
+
+Cierra sesión y vuelve a entrar con Stanley, Nelson, Astrid, Rut, Lester o Gustavo. Comprueba que puedes consultar, agregar, editar, activar y desactivar personajes, y consultar partidas y puntuaciones. Los editores carecen de permisos para borrar personajes, cambiar partidas, gestionar usuarios, perfiles, contraseñas ajenas, grupos o permisos. El comando limita las cuentas de estos seis editores a sus permisos directos de edición y retira sus membresías previas en grupos.
+
+El juego está disponible en [Sonic Memory Card](http://localhost:8081/).
 
 ## 6. Comandos de administración local
 

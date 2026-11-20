@@ -1,6 +1,5 @@
 
 import json
-from uuid import UUID
 
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
@@ -8,92 +7,47 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from .models import Partida, Personaje
 from .services import (
     ErrorJugada,
     abandonar_partida,
+    confirmar_vencimiento,
     consultar_partida,
     crear_partida,
     obtener_nivel,
+    segundos_previa_restantes,
     voltear_carta,
 )
 
 
-CLAVE_PARTIDA = "sonic_partida_pendiente"
+def leer_objeto_json(request, campos):
+    def objeto_sin_duplicados(pares):
+        objeto = dict(pares)
+        if len(objeto) != len(pares):
+            raise ValueError("El JSON contiene campos duplicados")
+        return objeto
+
+    datos = json.loads(request.body, object_pairs_hook=objeto_sin_duplicados)
+    if not isinstance(datos, dict) or datos.keys() - campos:
+        raise ValueError("El objeto JSON contiene campos inválidos")
+    return datos
 
 
 @login_required
+@require_GET
 def inicio(request):
     if request.GET.get("practica") == "1":
         return render(request, "memory/inicio.html", {"practica": True})
 
-    referencia = request.session.get(CLAVE_PARTIDA)
-    partida = None
-
-    if referencia:
-        try:
-            identificador = UUID(str(referencia))
-        except (TypeError, ValueError, AttributeError):
-            request.session.pop(CLAVE_PARTIDA, None)
-        else:
-            partida = Partida.objects.filter(
-                id=identificador,
-                usuario=request.user,
-                practica=False,
-            ).first()
-
-            if partida is None:
-                request.session.pop(CLAVE_PARTIDA, None)
-
-    if partida is None:
-        partida = Partida.objects.filter(
-            usuario=request.user,
-            practica=False,
-            estado=Partida.Estado.EN_CURSO,
-        ).order_by("-inicio_servidor").first()
-
+    partida = Partida.objects.filter(
+        usuario=request.user,
+        practica=False,
+        estado=Partida.Estado.EN_CURSO,
+    ).first()
     if partida:
-        if partida.estado == Partida.Estado.EN_CURSO:
-            try:
-                datos = consultar_partida(
-                    request.user,
-                    partida.id
-                )
-            except Partida.DoesNotExist:
-                request.session.pop(CLAVE_PARTIDA, None)
-            else:
-                if datos.get("estado") in {
-                    Partida.Estado.EN_CURSO,
-                    Partida.Estado.TIEMPO_AGOTADO,
-                }:
-                    if datos["estado"] == Partida.Estado.EN_CURSO:
-                        request.session[CLAVE_PARTIDA] = str(
-                            partida.id
-                        )
-                    else:
-                        request.session.pop(
-                            CLAVE_PARTIDA,
-                            None
-                        )
-
-                    return redirect(
-                        "memory:jugar_partida",
-                        partida_id=partida.id
-                    )
-
-                request.session.pop(CLAVE_PARTIDA, None)
-
-        elif partida.estado == Partida.Estado.TIEMPO_AGOTADO:
-            request.session.pop(CLAVE_PARTIDA, None)
-
-            return redirect(
-                "memory:jugar_partida",
-                partida_id=partida.id
-            )
-        else:
-            request.session.pop(CLAVE_PARTIDA, None)
+        return redirect("memory:jugar_partida", partida_id=partida.id)
 
     return render(request, "memory/inicio.html")
 
@@ -102,16 +56,11 @@ def inicio(request):
 @require_POST
 def nueva_partida(request):
     try:
-        datos = json.loads(request.body or "{}")
-
-        if not isinstance(datos, dict):
-            raise ValueError(
-                "El cuerpo debe ser un objeto JSON"
-            )
-
-        dificultad = str(
-            datos.get("dificultad", "")
-        ).upper()
+        datos = leer_objeto_json(request, {"dificultad", "practica"})
+        dificultad = datos.get("dificultad")
+        if not isinstance(dificultad, str):
+            raise ValueError("Dificultad no válida")
+        dificultad = dificultad.upper()
 
         practica = datos.get("practica", False)
         if not isinstance(practica, bool):
@@ -121,14 +70,11 @@ def nueva_partida(request):
 
         nivel = obtener_nivel(dificultad)
 
-    except (json.JSONDecodeError, TypeError, ValueError) as error:
+    except (ValueError, RecursionError) as error:
         return JsonResponse(
             {"ok": False, "error": str(error)},
             status=400
         )
-
-    if not practica:
-        request.session[CLAVE_PARTIDA] = str(partida.id)
 
     return JsonResponse({
         "ok": True,
@@ -150,25 +96,13 @@ def nueva_partida(request):
 
 @login_required
 @require_GET
+@never_cache
 def jugar_partida(request, partida_id):
     partida = get_object_or_404(
         Partida,
         id=partida_id,
         usuario=request.user
     )
-
-    if partida.estado == Partida.Estado.EN_CURSO:
-        consultar_partida(
-            request.user,
-            partida.id
-        )
-
-        partida.refresh_from_db()
-
-        if partida.estado == Partida.Estado.EN_CURSO and not partida.practica:
-            request.session[CLAVE_PARTIDA] = str(
-                partida.id
-            )
 
     nivel = obtener_nivel(partida.dificultad)
 
@@ -192,39 +126,8 @@ def jugar_partida(request, partida_id):
     )
 
 
-def segundos_previa_restantes(partida, ahora):
-    nivel = obtener_nivel(partida.dificultad)
-
-    marca = partida.estado_juego.get(
-        "vista_previa_inicio"
-    )
-
-    if (
-        partida.estado != Partida.Estado.EN_CURSO
-        or not marca
-        or partida.movimientos > 0
-    ):
-        return 0
-
-    transcurrido = (
-        ahora - partida.inicio_servidor
-    ).total_seconds()
-
-    if transcurrido >= partida.limite_segundos:
-        return 0
-
-    return max(
-        0,
-        min(
-            float(nivel["vista_previa"]) -
-            (ahora.timestamp() - float(marca)),
-            partida.limite_segundos - transcurrido,
-        )
-    )
-
-
 @login_required
-@require_GET
+@require_POST
 @never_cache
 @transaction.atomic
 def vista_previa(request, partida_id):
@@ -334,11 +237,13 @@ def carta_vista_previa(request, partida_id, posicion):
 
 
 @login_required
-@require_GET
+@require_http_methods(["GET", "POST"])
+@never_cache
 def estado_partida(request, partida_id):
+    consultar = confirmar_vencimiento if request.method == "POST" else consultar_partida
     try:
         return JsonResponse(
-            consultar_partida(
+            consultar(
                 request.user,
                 partida_id
             )
@@ -362,14 +267,6 @@ def abandonar(request, partida_id):
             partida_id
         )
 
-        if str(
-            request.session.get(CLAVE_PARTIDA)
-        ) == str(partida_id):
-            request.session.pop(
-                CLAVE_PARTIDA,
-                None
-            )
-
         return JsonResponse(datos)
 
     except Partida.DoesNotExist:
@@ -386,16 +283,7 @@ def abandonar(request, partida_id):
 @require_POST
 def voltear(request, partida_id):
     try:
-        datos = json.loads(request.body or "{}")
-
-        if not isinstance(datos, dict):
-            return JsonResponse(
-                {
-                    "ok": False,
-                    "error": "El cuerpo debe ser un objeto JSON"
-                },
-                status=400
-            )
+        datos = leer_objeto_json(request, {"posicion", "seq_num"})
 
         respuesta = voltear_carta(
             request.user,
@@ -409,7 +297,7 @@ def voltear(request, partida_id):
             status=200 if respuesta.get("ok") else 409
         )
 
-    except (TypeError, json.JSONDecodeError):
+    except (ValueError, RecursionError):
         return JsonResponse(
             {
                 "ok": False,
