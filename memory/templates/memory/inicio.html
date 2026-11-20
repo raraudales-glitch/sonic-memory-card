@@ -437,6 +437,11 @@
                 Selecciona tu dificultad
             </p>
 
+            <label class="subtitulo">
+                <input type="checkbox" id="modo-practica"{% if practica %} checked{% endif %}>
+                Modo práctica (sin puntaje ni estadísticas)
+            </label>
+
             <div class="dificultades">
 
                 <button
@@ -534,7 +539,8 @@
                             "X-CSRFToken": obtenerCookie("csrftoken")
                         },
                         body: JSON.stringify({
-                            dificultad: dificultad
+                            dificultad: dificultad,
+                            practica: document.getElementById("modo-practica").checked
                         })
                     }
                 );

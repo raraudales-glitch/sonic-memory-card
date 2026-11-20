@@ -117,6 +117,8 @@ class Partida(models.Model):
         default=Estado.EN_CURSO
     )
 
+    practica = models.BooleanField(default=False, editable=False)
+
     inicio_servidor = models.DateTimeField(auto_now_add=True)
 
     limite_segundos = models.PositiveIntegerField()
@@ -146,9 +148,9 @@ class Partida(models.Model):
 
         constraints = [
             models.UniqueConstraint(
-                fields=["usuario"],
+                fields=["usuario", "practica"],
                 condition=Q(estado="EN_CURSO"),
-                name="una_partida_en_curso_por_usuario"
+                name="una_partida_en_curso_por_usuario_y_modo"
             )
         ]
 

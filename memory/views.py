@@ -26,6 +26,9 @@ CLAVE_PARTIDA = "sonic_partida_pendiente"
 
 @login_required
 def inicio(request):
+    if request.GET.get("practica") == "1":
+        return render(request, "memory/inicio.html", {"practica": True})
+
     referencia = request.session.get(CLAVE_PARTIDA)
     partida = None
 
@@ -38,6 +41,7 @@ def inicio(request):
             partida = Partida.objects.filter(
                 id=identificador,
                 usuario=request.user,
+                practica=False,
             ).first()
 
             if partida is None:
@@ -46,6 +50,7 @@ def inicio(request):
     if partida is None:
         partida = Partida.objects.filter(
             usuario=request.user,
+            practica=False,
             estado=Partida.Estado.EN_CURSO,
         ).order_by("-inicio_servidor").first()
 
@@ -108,10 +113,11 @@ def nueva_partida(request):
             datos.get("dificultad", "")
         ).upper()
 
-        partida = crear_partida(
-            request.user,
-            dificultad
-        )
+        practica = datos.get("practica", False)
+        if not isinstance(practica, bool):
+            raise ValueError("Modo de práctica inválido")
+
+        partida = crear_partida(request.user, dificultad, practica=practica)
 
         nivel = obtener_nivel(dificultad)
 
@@ -121,7 +127,8 @@ def nueva_partida(request):
             status=400
         )
 
-    request.session[CLAVE_PARTIDA] = str(partida.id)
+    if not practica:
+        request.session[CLAVE_PARTIDA] = str(partida.id)
 
     return JsonResponse({
         "ok": True,
@@ -158,7 +165,7 @@ def jugar_partida(request, partida_id):
 
         partida.refresh_from_db()
 
-        if partida.estado == Partida.Estado.EN_CURSO:
+        if partida.estado == Partida.Estado.EN_CURSO and not partida.practica:
             request.session[CLAVE_PARTIDA] = str(
                 partida.id
             )

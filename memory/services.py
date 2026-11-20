@@ -73,7 +73,7 @@ def cerrar_partida(partida, resultado, ahora=None):
     partida.estado = resultado
     partida.fin_servidor = ahora
     partida.duracion_segundos = max(0, int((ahora - partida.inicio_servidor).total_seconds()))
-    if resultado == Partida.Estado.GANADA:
+    if resultado == Partida.Estado.GANADA and not partida.practica:
         nivel = obtener_nivel(partida.dificultad)
         restante = tiempo_restante(partida, ahora)
         base = max(100, 1000 + 5 * restante - 25 * partida.errores)
@@ -124,18 +124,21 @@ def estado_publico(partida):
 
 
 @transaction.atomic
-def crear_partida(usuario, dificultad):
+def crear_partida(usuario, dificultad, *, practica=False):
     dificultad = str(dificultad).upper()
     nivel = obtener_nivel(dificultad)
     get_user_model().objects.select_for_update().get(pk=usuario.pk)
-    for anterior in Partida.objects.select_for_update().filter(usuario=usuario, estado=Partida.Estado.EN_CURSO):
+    activas = Partida.objects.select_for_update().filter(
+        usuario=usuario, practica=practica, estado=Partida.Estado.EN_CURSO
+    )
+    for anterior in activas:
         verificar_vencimiento(anterior)
         if anterior.estado == Partida.Estado.EN_CURSO:
             cerrar_partida(anterior, Partida.Estado.ABANDONADA)
     estado, semilla = crear_tablero(dificultad)
     return Partida.objects.create(usuario=usuario, dificultad=dificultad,
                                   limite_segundos=nivel["tiempo"], estado_juego=estado,
-                                  semilla=semilla)
+                                  semilla=semilla, practica=practica)
 
 
 @transaction.atomic

@@ -41,6 +41,7 @@ def perfil_jugador(request):
 
     partidas_activas = Partida.objects.filter(
         usuario=usuario,
+        practica=False,
         estado="EN_CURSO"
     )
 
@@ -51,6 +52,7 @@ def perfil_jugador(request):
 
     partidas = Partida.objects.filter(
         usuario=usuario,
+        practica=False,
         estado__in=ESTADOS_FINALES
     )
 
@@ -145,6 +147,7 @@ def perfil_jugador(request):
         "porcentaje_victorias": porcentaje_victorias,
         "partidas_activas": Partida.objects.filter(
             usuario=usuario,
+            practica=False,
             estado="EN_CURSO"
         ).count(),
         "niveles": niveles,

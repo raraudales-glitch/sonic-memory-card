@@ -4,6 +4,7 @@
 
     const raiz = document.body;
     const id = raiz.dataset.partidaId;
+    const practica = raiz.dataset.practica === "true";
     const base = raiz.dataset.staticBase || "/static/";
 
     if (!id) return;
@@ -396,12 +397,13 @@
 
         const resumen = document.createElement("p");
 
-        resumen.textContent =
-            `Fallos: ${datos.fallos ?? 0}. ` +
-            `Puntaje: ${datos.puntaje ?? 0}.`;
+        resumen.textContent = `Fallos: ${datos.fallos ?? 0}.`;
+        if (!practica) {
+            resumen.textContent += ` Puntaje: ${datos.puntaje ?? 0}.`;
+        }
 
         const volver = document.createElement("a");
-        volver.href = "/";
+        volver.href = practica ? "/?practica=1" : "/";
         volver.textContent = "Volver al menú";
 
         tarjeta.append(
@@ -545,7 +547,9 @@
 
             if (
                 !confirm(
-                    "¿Abandonar la partida? Contará como derrota."
+                    practica
+                        ? "¿Abandonar la práctica?"
+                        : "¿Abandonar la partida? Contará como derrota."
                 )
             ) {
                 return;

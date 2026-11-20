@@ -46,6 +46,7 @@ class PartidaAdmin(admin.ModelAdmin):
         "id",
         "usuario",
         "dificultad",
+        "practica",
         "estado",
         "puntaje",
         "errores",
@@ -54,6 +55,7 @@ class PartidaAdmin(admin.ModelAdmin):
 
     list_filter = (
         "dificultad",
+        "practica",
         "estado",
     )
 
