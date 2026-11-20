@@ -139,7 +139,20 @@ docker compose exec web python manage.py migrate
 docker compose exec web python manage.py cargar_personajes
 ```
 
-**6. Configurar las cuentas iniciales:**
+**6. Crear tu cuenta STAFF:**
+
+Después de clonar el repositorio y completar los pasos 1 a 5, ejecuta solamente el comando de tu cuenta en tu instalación local.
+
+| Integrante | Comando |
+|---|---|
+| Stanley | `docker compose exec web python manage.py crear_usuarios_iniciales --usuario Stanley` |
+| Nelson | `docker compose exec web python manage.py crear_usuarios_iniciales --usuario Nelson` |
+| Astrid | `docker compose exec web python manage.py crear_usuarios_iniciales --usuario Astrid` |
+| Rut | `docker compose exec web python manage.py crear_usuarios_iniciales --usuario Rut` |
+| Lester | `docker compose exec web python manage.py crear_usuarios_iniciales --usuario Lester` |
+| Gustavo | `docker compose exec web python manage.py crear_usuarios_iniciales --usuario Gustavo` |
+
+Para inicializar todas las cuentas, incluida `ADMIN`, la instalación administrativa puede ejecutar el comando sin argumentos.
 
 ```powershell
 docker compose exec web python manage.py crear_usuarios_iniciales
@@ -151,9 +164,9 @@ Cada instalación usa su propia base de datos PostgreSQL de Docker y configura s
 
 **7. Abrir el panel administrativo y comprobar los permisos:**
 
-Abre [el panel administrativo](http://localhost:8081/admin/) e inicia sesión con `ADMIN` para verificar que puedes administrar usuarios, grupos y todos los modelos.
+Abre [el panel administrativo](http://localhost:8081/admin/) e inicia sesión con tu cuenta STAFF. Comprueba que puedes consultar, agregar, editar, activar y desactivar personajes, y consultar partidas y puntuaciones. Los editores carecen de permisos para borrar personajes, cambiar partidas, gestionar usuarios, perfiles, contraseñas ajenas, grupos o permisos. El comando limita las cuentas STAFF seleccionadas a sus permisos de editor y retira sus membresías previas en grupos.
 
-Cierra sesión y vuelve a entrar con Stanley, Nelson, Astrid, Rut, Lester o Gustavo. Comprueba que puedes consultar, agregar, editar, activar y desactivar personajes, y consultar partidas y puntuaciones. Los editores carecen de permisos para borrar personajes, cambiar partidas, gestionar usuarios, perfiles, contraseñas ajenas, grupos o permisos. El comando limita las cuentas de estos seis editores a sus permisos directos de edición y retira sus membresías previas en grupos.
+Si inicializaste todas las cuentas, puedes iniciar sesión con `ADMIN` para verificar el acceso completo a usuarios, grupos y modelos.
 
 El juego está disponible en [Sonic Memory Card](http://localhost:8081/).
 

@@ -12,12 +12,20 @@ from django.db.models import Q
 from memory.models import PerfilJugador
 
 
-CUENTAS = ("ADMIN", "Stanley", "Nelson", "Astrid", "Rut", "Lester", "Gustavo")
+EDITORES = ("Stanley", "Nelson", "Astrid", "Rut", "Lester", "Gustavo")
+CUENTAS = ("ADMIN", *EDITORES)
 PERMISOS_EDITOR = {"view_personaje", "add_personaje", "change_personaje", "view_partida"}
 
 
 class Command(BaseCommand):
     help = "Crea las cuentas iniciales y configura sus permisos de administracion."
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--usuario",
+            choices=EDITORES,
+            help="Crea o configura solo la cuenta STAFF indicada.",
+        )
 
     def buscar_usuario(self, usuarios, nombre):
         try:
@@ -51,6 +59,11 @@ class Command(BaseCommand):
             return clave
 
     def handle(self, *args, **options):
+        usuario_indicado = options["usuario"]
+        if usuario_indicado is not None and usuario_indicado not in EDITORES:
+            raise CommandError("El usuario indicado debe ser uno de los editores iniciales.")
+        cuentas = CUENTAS if usuario_indicado is None else (usuario_indicado,)
+
         Usuario = get_user_model()
         permisos = list(Permission.objects.filter(
             Q(content_type__model="personaje", codename__in=PERMISOS_EDITOR - {"view_partida"})
@@ -61,7 +74,7 @@ class Command(BaseCommand):
             raise CommandError("Faltan permisos de Django. Ejecuta migrate primero.")
 
         pendientes = {}
-        for nombre in CUENTAS:
+        for nombre in cuentas:
             if self.buscar_usuario(Usuario.objects, nombre) is None:
                 usuario = Usuario(username=nombre)
                 usuario.set_password(self.pedir_clave(usuario))
@@ -69,7 +82,7 @@ class Command(BaseCommand):
 
         resumen = []
         with transaction.atomic():
-            for nombre in CUENTAS:
+            for nombre in cuentas:
                 es_admin = nombre == "ADMIN"
                 usuario = self.buscar_usuario(Usuario.objects.select_for_update(), nombre)
                 creado = False

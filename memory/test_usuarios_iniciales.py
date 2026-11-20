@@ -1,10 +1,12 @@
 from io import StringIO
+from pathlib import Path
 from secrets import token_urlsafe
 from unittest.mock import patch
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group, Permission
-from django.core.management import call_command
+from django.core.management import CommandError, call_command
 from django.test import TestCase
 from django.urls import reverse
 
@@ -19,12 +21,12 @@ class UsuariosInicialesTests(TestCase):
         "memory.view_partida",
     }
 
-    def ejecutar(self, faltantes):
+    def ejecutar(self, faltantes, *argumentos):
         claves = {nombre: token_urlsafe(25) for nombre in faltantes}
         entradas = [clave for nombre in faltantes for clave in [claves[nombre]] * 2]
         salida = StringIO()
         with patch.object(crear_usuarios_iniciales, "getpass", side_effect=entradas) as pedir:
-            call_command("crear_usuarios_iniciales", stdout=salida)
+            call_command("crear_usuarios_iniciales", *argumentos, stdout=salida)
         self.assertEqual(pedir.call_count, len(entradas))
         for clave in claves.values():
             self.assertNotIn(clave, salida.getvalue())
@@ -129,3 +131,68 @@ class UsuariosInicialesTests(TestCase):
             ("admin:memory_perfiljugador_changelist", []),
         ):
             self.assertEqual(self.client.get(reverse(ruta, args=args)).status_code, 403)
+
+
+    def test_creacion_individual_para_cada_editor(self):
+        Usuario = get_user_model()
+        esperados = set()
+        for nombre in self.nombres[1:]:
+            with self.subTest(usuario=nombre):
+                claves, salida = self.ejecutar([nombre], "--usuario", nombre)
+                esperados.add(nombre)
+                self.assertEqual(set(Usuario.objects.values_list("username", flat=True)), esperados)
+                self.assertIn(f"{nombre}: creado", salida)
+                usuario = Usuario.objects.get(username=nombre)
+                self.assertTrue(usuario.is_staff and usuario.is_active)
+                self.assertFalse(usuario.is_superuser)
+                self.assertTrue(usuario.check_password(claves[nombre]))
+                self.assertEqual(usuario.perfil.alias, nombre)
+                self.assertEqual(usuario.get_all_permissions(), self.permisos_editor)
+
+    def test_repeticion_individual_conserva_datos_y_no_modifica_admin(self):
+        Usuario = get_user_model()
+        admin = Usuario.objects.create_user(username="ADMIN", is_active=False)
+        stanley = Usuario.objects.create_user(username="Stanley", password=token_urlsafe(25))
+        stanley.perfil.alias = "Alias previo"
+        stanley.perfil.save(update_fields=["alias"])
+        hash_previo = stanley.password
+        partida = Partida.objects.create(
+            usuario=stanley, dificultad="FACIL", limite_segundos=150,
+            estado=Partida.Estado.GANADA, puntaje=125,
+        )
+
+        for _ in range(2):
+            _, salida = self.ejecutar([], "--usuario", "Stanley")
+            self.assertIn("Stanley: ya existia", salida)
+            self.assertNotIn("ADMIN", salida)
+        stanley.refresh_from_db()
+        admin.refresh_from_db()
+        self.assertEqual(Usuario.objects.count(), 2)
+        self.assertEqual(stanley.password, hash_previo)
+        self.assertEqual(stanley.perfil.alias, "Alias previo")
+        self.assertEqual(stanley.get_all_permissions(), self.permisos_editor)
+        self.assertEqual(Partida.objects.get(pk=partida.pk).puntaje, 125)
+        self.assertFalse(admin.is_staff or admin.is_superuser or admin.is_active)
+
+    def test_rechaza_cuentas_no_permitidas_como_editor(self):
+        with patch.object(crear_usuarios_iniciales, "getpass") as pedir:
+            for nombre in ("ADMIN", "otro"):
+                with self.subTest(usuario=nombre), self.assertRaises(CommandError):
+                    call_command("crear_usuarios_iniciales", "--usuario", nombre)
+        pedir.assert_not_called()
+        self.assertFalse(get_user_model().objects.exists())
+
+    def test_catalogo_registra_las_18_rutas_con_sus_mayusculas(self):
+        call_command("cargar_personajes", stdout=StringIO())
+        directorio = Path(settings.BASE_DIR) / "memory/static/memory/images/personajes"
+        archivos = {archivo.name for archivo in directorio.iterdir() if archivo.is_file()}
+        personajes = list(Personaje.objects.values_list("clave", "imagen"))
+        self.assertEqual(len(personajes), 18)
+        self.assertEqual(len({imagen for _, imagen in personajes}), 18)
+        for clave, imagen in personajes:
+            with self.subTest(personaje=clave):
+                self.assertTrue(imagen.startswith("memory/images/personajes/"))
+                nombre = Path(imagen).name
+                self.assertIn(nombre, archivos)
+                self.assertEqual(Path(nombre).stem.lower(), clave)
+                self.assertTrue((directorio / nombre).is_file())

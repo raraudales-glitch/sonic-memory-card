@@ -14,7 +14,7 @@ class Command(BaseCommand):
                 "origen": Personaje.Origen.VIDEOJUEGO,
                 "descripcion": "Erizo azul conocido por su enorme velocidad y espíritu aventurero.",
                 "frase": "Siempre listo para una nueva aventura.",
-                "imagen": "memory/images/personajes/sonic.png",
+                "imagen": "memory/images/personajes/SONIC.png",
             },
             {
                 "clave": "tails",
@@ -22,7 +22,7 @@ class Command(BaseCommand):
                 "origen": Personaje.Origen.VIDEOJUEGO,
                 "descripcion": "Zorro de dos colas, piloto e inventor con gran habilidad tecnológica.",
                 "frase": "La inteligencia también puede salvar el día.",
-                "imagen": "memory/images/personajes/tails.png",
+                "imagen": "memory/images/personajes/TAILS.png",
             },
             {
                 "clave": "knuckles",
@@ -38,7 +38,7 @@ class Command(BaseCommand):
                 "origen": Personaje.Origen.VIDEOJUEGO,
                 "descripcion": "Aventurera decidida reconocida por utilizar su gran martillo.",
                 "frase": "Determinación ante cualquier desafío.",
-                "imagen": "memory/images/personajes/amy.png",
+                "imagen": "memory/images/personajes/AMY.png",
             },
             {
                 "clave": "shadow",
@@ -46,7 +46,7 @@ class Command(BaseCommand):
                 "origen": Personaje.Origen.VIDEOJUEGO,
                 "descripcion": "Misterioso erizo con grandes capacidades y poderes relacionados con el Chaos.",
                 "frase": "Poder, velocidad y determinación.",
-                "imagen": "memory/images/personajes/shadow.png",
+                "imagen": "memory/images/personajes/SHADOW.png",
             },
             {
                 "clave": "eggman",
@@ -54,7 +54,7 @@ class Command(BaseCommand):
                 "origen": Personaje.Origen.VIDEOJUEGO,
                 "descripcion": "Científico brillante especializado en robots y grandes máquinas.",
                 "frase": "Una mente capaz de construir casi cualquier cosa.",
-                "imagen": "memory/images/personajes/eggman.png",
+                "imagen": "memory/images/personajes/EGGMAN.png",
             },
             {
                 "clave": "rouge",
@@ -62,7 +62,7 @@ class Command(BaseCommand):
                 "origen": Personaje.Origen.VIDEOJUEGO,
                 "descripcion": "Cazadora de tesoros y experta en infiltración.",
                 "frase": "Los secretos siempre tienen valor.",
-                "imagen": "memory/images/personajes/rouge.png",
+                "imagen": "memory/images/personajes/Rouge.png",
             },
             {
                 "clave": "blaze",
@@ -70,7 +70,7 @@ class Command(BaseCommand):
                 "origen": Personaje.Origen.VIDEOJUEGO,
                 "descripcion": "Princesa proveniente de otra dimensión con dominio sobre el fuego.",
                 "frase": "Control y poder en equilibrio.",
-                "imagen": "memory/images/personajes/blaze.png",
+                "imagen": "memory/images/personajes/BLAZE.png",
             },
             {
                 "clave": "silver",
@@ -78,7 +78,7 @@ class Command(BaseCommand):
                 "origen": Personaje.Origen.VIDEOJUEGO,
                 "descripcion": "Erizo proveniente del futuro con habilidades psicoquinéticas.",
                 "frase": "El futuro todavía puede cambiar.",
-                "imagen": "memory/images/personajes/silver.png",
+                "imagen": "memory/images/personajes/SILVER.PNG",
             },
             {
                 "clave": "metal-sonic",
@@ -94,7 +94,7 @@ class Command(BaseCommand):
                 "origen": Personaje.Origen.COMIC,
                 "descripcion": "Aventurera enérgica que utiliza su larga cola para desplazarse y combatir.",
                 "frase": "Una aventura siempre puede volverse más emocionante.",
-                "imagen": "memory/images/personajes/tangle.png",
+                "imagen": "memory/images/personajes/TANGLE.png",
             },
             {
                 "clave": "whisper",
@@ -102,7 +102,7 @@ class Command(BaseCommand):
                 "origen": Personaje.Origen.COMIC,
                 "descripcion": "Luchadora reservada que trabaja junto a Wisps y utiliza un Wispon.",
                 "frase": "No hace falta hablar mucho para actuar.",
-                "imagen": "memory/images/personajes/whisper.png",
+                "imagen": "memory/images/personajes/WHISPER.png",
             },
             {
                 "clave": "surge",
@@ -110,7 +110,7 @@ class Command(BaseCommand):
                 "origen": Personaje.Origen.COMIC,
                 "descripcion": "Poderosa rival con capacidades eléctricas y gran velocidad.",
                 "frase": "Energía difícil de contener.",
-                "imagen": "memory/images/personajes/surge.png",
+                "imagen": "memory/images/personajes/SURGE.png",
             },
             {
                 "clave": "kit",
@@ -118,7 +118,7 @@ class Command(BaseCommand):
                 "origen": Personaje.Origen.COMIC,
                 "descripcion": "Compañero de Surge con habilidades relacionadas con el control del agua.",
                 "frase": "El agua puede ser más poderosa de lo que parece.",
-                "imagen": "memory/images/personajes/kit.png",
+                "imagen": "memory/images/personajes/KIT.png",
             },
             {
                 "clave": "belle",
@@ -126,7 +126,7 @@ class Command(BaseCommand):
                 "origen": Personaje.Origen.COMIC,
                 "descripcion": "Robot de madera de personalidad amable y curiosa.",
                 "frase": "Comprender el mundo también es una aventura.",
-                "imagen": "memory/images/personajes/belle.png",
+                "imagen": "memory/images/personajes/BELLE.png",
             },
             {
                 "clave": "lanolin",
@@ -134,7 +134,7 @@ class Command(BaseCommand):
                 "origen": Personaje.Origen.COMIC,
                 "descripcion": "Integrante de la Restoration con una personalidad disciplinada y estratégica.",
                 "frase": "Un buen plan puede cambiar una batalla.",
-                "imagen": "memory/images/personajes/lanolin.png",
+                "imagen": "memory/images/personajes/LANOLIN.png",
             },
             {
                 "clave": "mimic",
@@ -142,7 +142,7 @@ class Command(BaseCommand):
                 "origen": Personaje.Origen.COMIC,
                 "descripcion": "Peligroso cambiaformas especializado en engaño e infiltración.",
                 "frase": "Las apariencias pueden engañar.",
-                "imagen": "memory/images/personajes/mimic.png",
+                "imagen": "memory/images/personajes/MIMIC.png",
             },
             {
                 "clave": "jewel",
@@ -150,7 +150,7 @@ class Command(BaseCommand):
                 "origen": Personaje.Origen.COMIC,
                 "descripcion": "Organizadora y administradora vinculada a la Restoration.",
                 "frase": "La organización también mantiene a los héroes en marcha.",
-                "imagen": "memory/images/personajes/jewel.png",
+                "imagen": "memory/images/personajes/JEWEL.png",
             },
         ]
 

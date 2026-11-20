@@ -39,7 +39,8 @@
             ),
 
             muteMusica:
-                localStorage.getItem(CLAVES.muteMusica) === "1",
+                (localStorage.getItem(CLAVES.muteMusica)
+                    ?? localStorage.getItem("sonic_silencio")) === "1",
 
             muteEfectos:
                 localStorage.getItem(CLAVES.muteEfectos) === "1"
