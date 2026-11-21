@@ -26,7 +26,7 @@ def preparar():
 def crear(cliente, dificultad="FACIL", **datos):
     respuesta = cliente.post(reverse("memory:nueva_partida"),
                              {"dificultad": dificultad, **datos},
-                             content_type="application/json")
+                             content_type="application/json", secure=True)
     return Partida.objects.get(pk=respuesta.json()["partida"]["id"])
 
 
