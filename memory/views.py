@@ -129,9 +129,13 @@ def jugar_partida(request, partida_id):
             "posiciones": range(
                 nivel["filas"] * nivel["columnas"]
             ),
+            "mostrar_previa": nivel["vista_previa"] > 0 and partida.movimientos == 0,
             "imagen_tapa": tapas[partida.dificultad],
         }
     )
+
+
+CARTAS_PREVIA = 4
 
 
 @login_required
@@ -171,15 +175,20 @@ def vista_previa(request, partida_id):
             update_fields=["estado_juego"]
         )
 
-    restante = segundos_previa_restantes(
-        partida,
-        ahora
-    )
+    restante = segundos_previa_restantes(partida, ahora)
+    orden = estado_juego["orden"][:CARTAS_PREVIA] if restante > 0 else []
+    catalogo = Personaje.objects.filter(activo=True).in_bulk(orden, field_name="clave")
+    restante = segundos_previa_restantes(partida, timezone.now())
+    cartas = [
+        {"posicion": posicion, "nombre": catalogo[clave].nombre, "imagen": catalogo[clave].imagen}
+        for posicion, clave in enumerate(orden) if restante > 0 and clave in catalogo
+    ]
 
     return JsonResponse({
         "ok": True,
         "activa": restante > 0,
         "restante_ms": int(restante * 1000),
+        "cartas": cartas,
         "cantidad_cartas": (
             nivel["filas"] * nivel["columnas"]
         ),
@@ -221,6 +230,9 @@ def carta_vista_previa(request, partida_id, posicion):
             },
             status=400
         )
+
+    if posicion >= CARTAS_PREVIA:
+        return JsonResponse({"ok": False, "error": "Carta fuera de la vista previa"}, status=403)
 
     personaje = Personaje.objects.filter(
         clave=orden[posicion],

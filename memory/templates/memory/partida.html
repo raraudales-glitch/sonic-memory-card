@@ -85,27 +85,42 @@
             position: relative; width: 100%; aspect-ratio: 3/4;
             padding: 0; border: none; border-radius: 12px;
             background: transparent; cursor: pointer;
+            touch-action: manipulation;
+            box-shadow: 0 5px 12px rgba(0,0,0,.4);
+        }
+        .carta:focus-visible { outline: 2px solid white; outline-offset: 2px; }
+        .carta.pendiente { outline: 2px solid #77c8ff; }
+        .carta.emparejada { cursor: default; box-shadow: 0 0 9px #00ff78; }
+        .carta-giro {
+            position: absolute; inset: 0;
+            pointer-events: none;
             transform-style: preserve-3d;
-            transition: transform .35s ease, filter .2s ease;
+            transition: transform .3s ease;
         }
-        .carta:hover {
-            transform: translateY(-5px) scale(1.03);
-            filter: brightness(1.08);
+        .carta.volteada .carta-giro { transform: rotateY(180deg); }
+        .carta-cara {
+            position: absolute; inset: 0;
+            width: 100%; height: 100%; border-radius: 12px;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            object-fit: cover;
         }
-        .carta img {
-            display: block; width: 100%; height: 100%;
-            object-fit: cover; border-radius: 12px;
-            box-shadow: 0 8px 20px rgba(0,0,0,.45),
-                        0 0 12px rgba(0,110,255,.15);
+        .carta-personaje {
+            transform: rotateY(180deg);
+            object-fit: contain;
+            background: #080c19;
         }
-        .carta.volteada { transform: rotateY(180deg); }
-        .carta.volteada img { transform: rotateY(180deg); }
-        .carta.emparejada {
-            cursor: default;
-            filter: brightness(1.15) drop-shadow(0 0 13px rgba(0,255,120,.75));
+        @media (hover: hover) and (pointer: fine) {
+            .carta:not([aria-disabled="true"]):hover { box-shadow: 0 0 12px #77c8ff; }
         }
-        .carta.emparejada:hover { transform: none; }
-        .carta:disabled { cursor: not-allowed; }
+        @media (prefers-reduced-motion: reduce) {
+            .carta-giro { transition: none; }
+            body::before { animation: none; }
+        }
+        @media (pointer: coarse) {
+            body::before { animation: none; }
+        }
+        #reintentar-jugada { padding: 8px 14px; touch-action: manipulation; }
         .numero-carta {
             position: absolute; right: 7px; bottom: 7px;
             width: 24px; height: 24px; display: flex;
@@ -127,9 +142,9 @@
         @media (max-width: 700px) {
             .titulo { font-size: 20px; }
             .logo-superior { width: 45px; height: 45px; }
-            .columnas-4 { grid-template-columns: repeat(4,minmax(55px,75px)); }
-            .columnas-5 { grid-template-columns: repeat(5,minmax(48px,65px)); }
-            .columnas-6 { grid-template-columns: repeat(6,minmax(40px,55px)); }
+            .columnas-4 { grid-template-columns: repeat(4,minmax(0,75px)); }
+            .columnas-5 { grid-template-columns: repeat(5,minmax(0,65px)); }
+            .columnas-6 { grid-template-columns: repeat(6,minmax(0,55px)); }
             .tablero { gap: 8px; }
             .zona-juego { padding: 20px 8px 40px; }
             .zona-juego h1 { font-size: 27px; }
@@ -144,8 +159,8 @@
     data-abandono-url="{% url 'memory:abandonar_api' partida.id %}"
     data-resultado-url="{% url 'memory:resultado' partida.id %}"
     data-practica="{{ partida.practica|yesno:'true,false' }}"
-    data-movimientos="{{ partida.movimientos|default:0 }}"
-    data-tapa="{% static imagen_tapa %}"
+    data-previa-url="{% url 'memory:vista_previa' partida.id %}"
+    data-previa="{{ mostrar_previa|yesno:'true,false' }}"
     data-static-base="{% static '' %}"
 >
     <form style="display:none;">{% csrf_token %}</form>
@@ -188,150 +203,23 @@
         </p>
         <div class="tablero columnas-{{ nivel.columnas }}">
             {% for posicion in posiciones %}
-                <button type="button" class="carta" data-posicion="{{ posicion }}">
-                    <img src="{% static imagen_tapa %}" alt="Carta boca abajo">
+                <button type="button" class="carta" data-posicion="{{ posicion }}"
+                        aria-label="Carta {{ forloop.counter }}" aria-disabled="true">
+                    <span class="carta-giro" aria-hidden="true">
+                        <img class="carta-cara" src="{% static imagen_tapa %}?v=2" alt="">
+                        <img class="carta-cara carta-personaje" decoding="async" alt="">
+                    </span>
                     <span class="numero-carta">{{ forloop.counter }}</span>
                 </button>
             {% endfor %}
         </div>
         <p id="mensaje-juego" role="status" aria-live="polite"></p>
+        <button type="button" id="reintentar-jugada" hidden>Reintentar conexi?n</button>
     </main>
 
-    <script>
-        const TAPA_CARTA = document.body.dataset.tapa;
-        const STATIC_BASE = document.body.dataset.staticBase;
-        let seqNum = Number(document.body.dataset.movimientos || 0) + 1;
-        let bloqueado = false;
-
-        document.querySelectorAll('.carta').forEach(carta => {
-            carta.addEventListener('click', () => {
-                if (bloqueado || carta.disabled ||
-                    carta.classList.contains('emparejada') ||
-                    carta.classList.contains('volteada')) return;
-
-                // El giro suena en el clic real del jugador, antes del fetch.
-                window.SonicUI?.reproducir('carta');
-                bloqueado = true;
-                procesarCarta(Number(carta.dataset.posicion));
-            });
-        });
-
-        async function procesarCarta(posicion) {
-            try {
-                const respuesta = await fetch(document.body.dataset.accionUrl, {
-                    method: 'POST',
-                    credentials: 'same-origin',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                    },
-                    body: JSON.stringify({ posicion, seq_num: seqNum })
-                });
-                const datos = await respuesta.json();
-
-                if (!respuesta.ok || datos.ok === false) {
-                    mostrarMensaje(datos.error || 'No se pudo procesar la carta');
-                    // Una partida finalizada no puede volver a habilitarse.
-                    bloqueado = Boolean(datos.estado && datos.estado !== 'EN_CURSO');
-                    return;
-                }
-
-                seqNum += 1;
-                if (datos.tipo === 'primera') {
-                    mostrarPersonaje(datos.carta);
-                    mostrarMensaje('Selecciona otra carta');
-                    bloqueado = false;
-                    return;
-                }
-
-                if (datos.tipo === 'pareja' || datos.tipo === 'fallo') {
-                    datos.cartas.forEach(mostrarPersonaje);
-                }
-
-                if (datos.tipo === 'pareja') {
-                    datos.cartas.forEach(info => {
-                        const carta = obtenerCarta(info.posicion);
-                        if (carta) {
-                            carta.classList.add('emparejada');
-                            carta.classList.remove('volteada');
-                        }
-                    });
-                    mostrarMensaje('¡Pareja encontrada! ' + datos.personaje.nombre);
-                    window.SonicUI?.reproducir('acierto');
-
-                    // El modal usa la imagen y frase guardadas en Django.
-                    const alCerrar = () => {
-                        if (!datos.estado || datos.estado === 'EN_CURSO') bloqueado = false;
-                    };
-                    if (window.SonicUI?.mostrarPareja) {
-                        window.SonicUI.mostrarPareja(datos.personaje, alCerrar);
-                    } else {
-                        alCerrar();
-                    }
-                    return;
-                }
-
-                if (datos.tipo === 'fallo') {
-                    window.SonicUI?.reproducir('error');
-                    actualizarFallos(datos.fallos);
-                    mostrarMensaje('No son pareja');
-                    setTimeout(() => {
-                        datos.cartas.forEach(info => ocultarCarta(info.posicion));
-                        if (!datos.estado || datos.estado === 'EN_CURSO') bloqueado = false;
-                        mostrarMensaje('');
-                    }, Number(datos.espera_ms) || 1000);
-                    return;
-                }
-
-                bloqueado = false;
-            } catch (error) {
-                console.error('Error al comunicarse con Django:', error);
-                mostrarMensaje('Error al comunicarse con el servidor');
-                bloqueado = false;
-            }
-        }
-
-        function mostrarPersonaje(cartaInfo) {
-            if (!cartaInfo) return;
-            const carta = obtenerCarta(cartaInfo.posicion);
-            if (!carta) return;
-            const imagen = carta.querySelector('img');
-            imagen.src = STATIC_BASE + cartaInfo.imagen;
-            imagen.alt = cartaInfo.nombre;
-            imagen.style.objectFit = 'contain';
-            imagen.style.background = 'rgba(8,12,25,.96)';
-            carta.classList.add('volteada');
-        }
-
-        function ocultarCarta(posicion) {
-            const carta = obtenerCarta(posicion);
-            if (!carta || carta.classList.contains('emparejada')) return;
-            const imagen = carta.querySelector('img');
-            imagen.src = TAPA_CARTA;
-            imagen.alt = 'Carta boca abajo';
-            imagen.style.objectFit = 'cover';
-            imagen.style.background = 'transparent';
-            carta.classList.remove('volteada');
-        }
-
-        function obtenerCarta(posicion) {
-            return document.querySelector(`.carta[data-posicion="${posicion}"]`);
-        }
-
-        function actualizarFallos(fallos) {
-            const indicador = document.getElementById('fallos-actuales');
-            if (indicador) indicador.textContent = fallos;
-        }
-
-        function mostrarMensaje(mensaje) {
-            const indicador = document.getElementById('mensaje-juego');
-            if (indicador) indicador.textContent = mensaje;
-        }
-    </script>
-
-<script src="{% static 'memory/js/efectos_y_frases.js' %}"></script>
-<script src="{% static 'memory/js/estado_y_audio.js' %}?v=13"></script>
-<script src="{% static 'memory/js/menu_opciones.js' %}?v=6"></script>
-<script src="{% static 'memory/js/vista_previa.js' %}?v=2"></script>
+    <script defer src="{% static 'memory/js/efectos_y_frases.js' %}?v=2"></script>
+    <script defer src="{% static 'memory/js/tablero.js' %}?v=1"></script>
+    <script defer src="{% static 'memory/js/estado_y_audio.js' %}?v=14"></script>
+    <script defer src="{% static 'memory/js/menu_opciones.js' %}?v=6"></script>
 </body>
 </html>

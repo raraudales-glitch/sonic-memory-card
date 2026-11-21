@@ -94,6 +94,38 @@ class AuditoriaPartidasTests(TestCase):
                     self.assertEqual(self.client.get(carta).status_code, 403)
                     self.assertEqual(girar(self.client, partida, 0, 1).status_code, 200)
 
+    def test_vista_previa_no_permite_recorrer_el_tablero(self):
+        for dificultad in ("FACIL", "NORMAL"):
+            with self.subTest(dificultad=dificultad):
+                partida = crear(self.client, dificultad)
+                previa = self.client.post(ruta("vista_previa", partida)).json()
+                muestra = {carta["posicion"] for carta in previa["cartas"]}
+                self.assertEqual(len(muestra), 4)
+                self.assertNotIn("orden", previa)
+                self.assertNotIn("semilla", previa)
+                for posicion in range(previa["cantidad_cartas"]):
+                    respuesta = self.client.get(ruta("carta_vista_previa", partida, posicion))
+                    self.assertEqual(respuesta.status_code, 200 if posicion in muestra else 403)
+                estado = self.client.get(ruta("estado_api", partida)).json()
+                self.assertGreater(estado["espera_ms"], 0)
+                self.assertEqual(estado["visibles"], [])
+
+    def test_reintento_tras_respuesta_perdida_no_duplica_fallo(self):
+        partida = crear(self.client)
+        orden = partida.estado_juego["orden"]
+        otra = next(i for i, clave in enumerate(orden) if clave != orden[0])
+        girar(self.client, partida, 0, 1)
+        respuesta = girar(self.client, partida, otra, 2)
+        estado = self.client.get(ruta("estado_api", partida)).json()
+        self.assertGreater(estado["espera_ms"], 0)
+        self.assertEqual(estado["visibles"], [])
+        self.assertEqual(estado["ultima_secuencia"], 2)
+        self.assertEqual(girar(self.client, partida, otra, 2).json(), respuesta.json())
+        self.assertEqual(girar(self.client, partida, 0, 2).status_code, 409)
+        self.assertEqual(Movimiento.objects.filter(partida=partida).count(), 2)
+        partida.refresh_from_db()
+        self.assertEqual(partida.errores, 1)
+
     def test_validacion_secuencia_posicion_y_bloqueo(self):
         partida = crear(self.client)
         orden = partida.estado_juego["orden"]

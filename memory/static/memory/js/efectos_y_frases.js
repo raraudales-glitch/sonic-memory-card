@@ -32,11 +32,10 @@
         const original = sonidos[nombre];
         if (!original) return;
 
-        actualizarVolumenEfectos();
-
         try {
+            const volumen = obtenerVolumenEfectos();
             const clon = original.cloneNode();
-            clon.volume = original.volume;
+            clon.volume = volumen;
             clon.play().catch(() => {});
         } catch (error) {
             console.warn("No se pudo reproducir el efecto:", nombre, error);
@@ -108,8 +107,10 @@
                 font-weight: bold;
                 cursor: pointer;
                 line-height: 1;
-                pointer-events: auto;
+                pointer-events: none;
             }
+
+            .sonic-toast-pareja.mostrar .sonic-toast-cerrar { pointer-events: auto; }
 
             .sonic-toast-body {
                 display: flex;
@@ -147,6 +148,10 @@
                 opacity: 0.95;
             }
 
+            @media (pointer: coarse) {
+                .sonic-toast-cerrar { display: none; }
+            }
+
             @media (max-width: 700px) {
                 .sonic-toast-pareja {
                     top: auto;
@@ -156,7 +161,9 @@
                     width: auto;
                 }
 
-                .sonic-toast-body {
+                .sonic-toast-pareja.mostrar .sonic-toast-cerrar { pointer-events: auto; }
+
+            .sonic-toast-body {
                     gap: 10px;
                 }
 

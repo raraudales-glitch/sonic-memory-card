@@ -28,7 +28,7 @@
     let cierreMostrado = false;
     let finPendiente = false;
 
-    let finLocal = Date.now() +
+    let finLocal = performance.now() +
         (Number.parseInt(reloj?.textContent || "0", 10) || 0)
         * 1000;
 
@@ -263,7 +263,7 @@
         return Math.max(
             0,
             Math.ceil(
-                (finLocal - Date.now()) / 1000
+                (finLocal - performance.now()) / 1000
             )
         );
     }
@@ -420,109 +420,22 @@
         document.body.appendChild(panel);
     }
 
-    function reconstruirCartas(datos) {
-        if (
-            typeof window.mostrarPersonaje !== "function"
-        ) {
-            return;
+    document.addEventListener("sonic:estado", ({detail: datos}) => {
+        estado = datos.estado;
+        finLocal = Math.min(finLocal, performance.now() + datos.tiempo_restante * 1000);
+        if (fallos && fallos.textContent !== String(datos.fallos)) {
+            fallos.textContent = datos.fallos;
         }
-
-        for (const info of (datos.emparejadas || [])) {
-            const carta = cartas.find(
-                c => Number(c.dataset.posicion) ===
-                    info.posicion
-            );
-
-            if (carta) {
-                window.mostrarPersonaje(info);
-                carta.classList.add("emparejada");
-            }
-        }
-
-        for (const info of (datos.visibles || [])) {
-            window.mostrarPersonaje(info);
-        }
-    }
-
-    let consultando = false;
-
-    async function actualizarDesdeServidor() {
-        if (
-            consultando ||
-            cierreMostrado ||
-            finPendiente
-        ) {
-            return;
-        }
-
-        consultando = true;
-
-        try {
-            const respuesta = await fetch(
-                raiz.dataset.estadoUrl,
-                {
-                    cache: "no-store",
-                    credentials: "same-origin"
-                }
-            );
-
-            if (!respuesta.ok) {
-                throw new Error(
-                    `HTTP ${respuesta.status}`
-                );
-            }
-
-            let datos = await respuesta.json();
-
-            if (datos.cierre_pendiente) {
-                const cierre = await fetch(raiz.dataset.cierreUrl, {
-                    method: "POST",
-                    credentials: "same-origin",
-                    headers: {
-                        "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value
-                    }
-                });
-                if (!cierre.ok) {
-                    throw new Error(`HTTP ${cierre.status}`);
-                }
-                datos = await cierre.json();
-            }
-
-            estado = datos.estado;
-
-            finLocal =
-                Date.now() +
-                datos.tiempo_restante * 1000;
-
-            if (fallos) {
-                fallos.textContent = datos.fallos;
-            }
-
-            reconstruirCartas(datos);
-
-            if (estadosFinales.has(datos.estado)) {
-                mostrarFinal(datos);
-            }
-
-            reproducirSegunTiempo();
-
-        } catch (error) {
-            console.warn(
-                "No se pudo sincronizar la partida:",
-                error
-            );
-
-        } finally {
-            consultando = false;
-        }
-    }
+        if (estadosFinales.has(estado)) mostrarFinal(datos);
+        reproducirSegunTiempo();
+    });
 
     setInterval(() => {
         if (cierreMostrado || finPendiente) return;
 
         const segundos = segundosVisibles();
 
-        if (reloj) {
+        if (reloj && reloj.textContent !== `${segundos}s`) {
             reloj.textContent = `${segundos}s`;
 
             reloj.style.color =
@@ -533,24 +446,10 @@
                         : "white";
         }
 
-        if (segundos === 0) {
-            cartas.forEach(carta => {
-                carta.disabled = true;
-            });
-
-            if (mensaje) {
-                mensaje.textContent =
-                    "Verificando el final de la partida...";
-            }
-        }
-
         reproducirSegunTiempo();
 
     }, 250);
 
-    setInterval(actualizarDesdeServidor, 500);
-
-    actualizarDesdeServidor();
     reproducirSegunTiempo();
 
     const salir = document.querySelector(
@@ -577,18 +476,22 @@
                 "[name=csrfmiddlewaretoken]"
             )?.value;
 
+            const controlador = new AbortController();
+            const limite = setTimeout(() => controlador.abort(), 6000);
             try {
-                await fetch(
+                const respuesta = await fetch(
                     raiz.dataset.abandonoUrl,
                     {
                         method: "POST",
                         headers: {
                             "X-CSRFToken": csrf || ""
                         },
-                        credentials: "same-origin"
+                        credentials: "same-origin",
+                        signal: controlador.signal
                     }
                 );
 
+                if (!respuesta.ok || !(await respuesta.json()).ok) throw new Error("Abandono sin confirmar");
                 location.href = salir.href;
 
             } catch (error) {
@@ -596,6 +499,8 @@
                     mensaje.textContent =
                         "No se pudo abandonar. Inténtalo otra vez.";
                 }
+            } finally {
+                clearTimeout(limite);
             }
         });
     }

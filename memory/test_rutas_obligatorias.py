@@ -72,7 +72,11 @@ class RutasObligatoriasTests(TestCase):
         self.assertNotContains(respuesta, "detalle privado", status_code=503)
 
     def test_historial_paginado_y_privado(self):
-        propias = [self.partida_final() for _ in range(11)]
+        fecha = timezone.now() - timedelta(seconds=11)
+        propias = []
+        for segundo in range(11):
+            with patch("django.utils.timezone.now", return_value=fecha + timedelta(seconds=segundo)):
+                propias.append(self.partida_final())
         self.partida_final(self.otro)
         self.assertEqual(self.client.get("/historial/").status_code, 302)
         self.client.force_login(self.usuario)

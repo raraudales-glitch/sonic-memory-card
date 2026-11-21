@@ -137,6 +137,10 @@ def estado_publico(partida, ahora=None):
         "emparejadas": [c for c in cartas if c["posicion"] in estado.get("emparejadas", [])],
         "visibles": [c for c in cartas if c["posicion"] in estado.get("visibles", [])],
         "bloqueado_hasta": estado.get("bloqueado_hasta"),
+        "espera_ms": math.ceil(1000 * max(
+            segundos_previa_restantes(partida, ahora),
+            (estado.get("bloqueado_hasta") or 0) - ahora.timestamp(),
+        )),
         "ultima_secuencia": partida.movimientos,
         "puntaje": partida.puntaje,
     }
