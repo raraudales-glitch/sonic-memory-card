@@ -269,9 +269,13 @@
         if (performance.now() - solicitud >= datos.restante_ms) return;
 
         mensaje.textContent = "¡Memoriza las cartas descubiertas!";
-        tablero.classList.add("vista-previa");
-        await new Promise(resolve => setTimeout(resolve, datos.restante_ms));
+        const giro = cartas[0].querySelector(".carta-giro");
+        const duracionGiro = parseFloat(getComputedStyle(giro).transitionDuration) * 1000;
+        tablero.classList.add("animando-previa", "vista-previa");
+        await new Promise(resolve => setTimeout(resolve, datos.restante_ms - duracionGiro));
         tablero.classList.remove("vista-previa");
+        await Promise.allSettled(giro.getAnimations().map(animacion => animacion.finished));
+        tablero.classList.remove("animando-previa");
         mensaje.textContent = "";
         liberar();
     }

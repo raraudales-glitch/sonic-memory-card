@@ -113,6 +113,7 @@ class TableroTactilTests(StaticLiveServerTestCase):
                     self.assertEqual(Movimiento.objects.filter(partida=partida).count(), 1)
 
     def test_vista_previa_simultanea_y_con_duracion_por_nivel(self):
+        self.cdp("Emulation.setEmulatedMedia", features=[{"name": "prefers-reduced-motion", "value": "no-preference"}])
         self.cdp("Page.enable")
         self.cdp("Page.addScriptToEvaluateOnNewDocument", source="""
             window.fasesPrevia = [];
@@ -127,6 +128,18 @@ class TableroTactilTests(StaticLiveServerTestCase):
                     resolve();
                 }, 300)));
             };
+            window.girosPrevia = [];
+            for (const tipo of ['transitionstart', 'transitionend']) {
+                document.addEventListener(tipo, evento => {
+                    if (evento.propertyName !== 'transform' || !evento.target.matches('.carta-giro')) return;
+                    girosPrevia.push({
+                        tipo,
+                        posicion: Number(evento.target.closest('.carta').dataset.posicion),
+                        instante: evento.timeStamp,
+                        duracion: evento.elapsedTime,
+                    });
+                });
+            }
             new MutationObserver(cambios => {
                 for (const cambio of cambios) {
                     const tablero = cambio.target;
@@ -134,43 +147,53 @@ class TableroTactilTests(StaticLiveServerTestCase):
                     const cartas = [...tablero.querySelectorAll('.carta')];
                     fasesPrevia.push({
                         instante: performance.now(),
-                        visibles: cartas.filter(carta => {
-                            const imagen = carta.querySelector('.carta-personaje');
-                            return imagen.naturalWidth > 0 && getComputedStyle(imagen).transform === 'none';
-                        }).length,
-                        tapasVisibles: cartas.filter(carta => {
-                            const tapa = carta.querySelector('.carta-cara:not(.carta-personaje)');
-                            return getComputedStyle(tapa).visibility === 'visible';
-                        }).length,
+                        perspectiva: getComputedStyle(cartas[0]).perspective,
+                        apertura: tablero.classList.contains('vista-previa'),
+                        listas: cartas.filter(carta => carta.querySelector('.carta-personaje').naturalWidth > 0).length,
                         habilitadas: cartas.filter(carta => carta.getAttribute('aria-disabled') === 'false').length,
                     });
+                    if (tablero.classList.contains('animando-previa')) cartas[0].click();
                 }
             }).observe(document, {attributes: true, subtree: true});
         """)
-        self.cdp("Emulation.setDeviceMetricsOverride", mobile=True, width=390, height=800, deviceScaleFactor=2)
-        for dificultad, total, duracion in (("FACIL", 16, 3000), ("NORMAL", 20, 1500), ("DIFICIL", 36, 0)):
-            with self.subTest(dificultad=dificultad):
-                partida = crear(self.client, dificultad)
-                url = self.live_server_url + ruta("jugar_partida", partida)
-                self.cdp("Page.navigate", url=url)
-                self.esperar(lambda: self.js(f"location.href === {json.dumps(url)} && !!document.querySelector('.tablero')"))
-                self.assertIsNotNone(self.js("window.fasesPrevia"))
-                if duracion:
-                    self.esperar(lambda: self.js("fasesPrevia.length === 1"))
-                    self.tocar(0)
-                self.esperar(lambda: self.cantidad(".carta[aria-disabled=false]") == total)
-                fases = self.js("fasesPrevia")
-                consultas = self.js("performance.getEntriesByType('resource').filter(r => r.name.includes('/vista-previa/')).length")
-                self.assertEqual(consultas, int(bool(duracion)))
-                if duracion:
-                    self.assertEqual([fase["visibles"] for fase in fases], [total, 0])
-                    self.assertEqual([fase["tapasVisibles"] for fase in fases], [0, total])
-                    self.assertEqual([fase["habilitadas"] for fase in fases], [0, total])
-                    self.assertGreaterEqual(fases[0]["instante"], self.js("precargaCompleta"))
-                    self.assertAlmostEqual(fases[1]["instante"] - fases[0]["instante"], duracion, delta=120)
-                else:
-                    self.assertEqual(fases, [])
-                self.assertFalse(Movimiento.objects.filter(partida=partida).exists())
+        for ancho in (390, 1200):
+            self.cdp("Emulation.setDeviceMetricsOverride", mobile=ancho == 390, width=ancho, height=800, deviceScaleFactor=2)
+            for dificultad, total, duracion in (("FACIL", 16, 3000), ("NORMAL", 20, 1500), ("DIFICIL", 36, 0)):
+                with self.subTest(ancho=ancho, dificultad=dificultad):
+                    partida = crear(self.client, dificultad)
+                    url = self.live_server_url + ruta("jugar_partida", partida)
+                    self.cdp("Page.navigate", url=url)
+                    self.esperar(lambda: self.js(f"location.href === {json.dumps(url)} && !!document.querySelector('.tablero')"))
+                    self.assertIsNotNone(self.js("window.fasesPrevia"))
+                    self.esperar(lambda: self.cantidad(".carta[aria-disabled=false]") == total)
+                    fases = self.js("fasesPrevia")
+                    consultas = self.js("performance.getEntriesByType('resource').filter(r => r.name.includes('/vista-previa/')).length")
+                    self.assertEqual(consultas, int(bool(duracion)))
+                    if duracion:
+                        self.assertEqual([fase["apertura"] for fase in fases], [True, False, False])
+                        self.assertEqual([fase["habilitadas"] for fase in fases], [0, 0, total])
+                        self.assertEqual([fase["perspectiva"] for fase in fases], ["650px", "650px", "none"])
+                        self.assertEqual(fases[0]["listas"], total)
+                        self.assertGreaterEqual(fases[0]["instante"], self.js("precargaCompleta"))
+                        self.assertAlmostEqual(fases[1]["instante"] - fases[0]["instante"], duracion - 300, delta=90)
+                        self.assertAlmostEqual(fases[2]["instante"] - fases[0]["instante"], duracion, delta=120)
+                        self.cdp("Runtime.evaluate", expression="new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))", awaitPromise=True)
+                        giros = self.js("girosPrevia")
+                        self.assertEqual(len(giros), 4 * total, [(giro["tipo"], giro["duracion"]) for giro in giros])
+                        for indice, tipo in enumerate(("transitionstart", "transitionend") * 2):
+                            grupo = giros[indice * total : (indice + 1) * total]
+                            self.assertEqual({giro["tipo"] for giro in grupo}, {tipo})
+                            self.assertEqual(sorted(giro["posicion"] for giro in grupo), list(range(total)))
+                            instante = [giro["instante"] for giro in grupo]
+                            self.assertLess(max(instante) - min(instante), 35)
+                            if tipo == "transitionend":
+                                self.assertTrue(all(abs(giro["duracion"] - 0.3) < 0.01 for giro in grupo))
+                    else:
+                        self.assertEqual(fases, [])
+                        self.assertEqual(self.js("girosPrevia"), [])
+                    self.assertTrue(self.js("""[...document.querySelectorAll('.carta-giro')]
+                        .every(giro => getComputedStyle(giro).transform === 'none')"""))
+                    self.assertFalse(Movimiento.objects.filter(partida=partida).exists())
 
     def test_toques_rapidos_timeout_y_reintento_idempotente(self):
         partida = crear(self.client, "DIFICIL")
