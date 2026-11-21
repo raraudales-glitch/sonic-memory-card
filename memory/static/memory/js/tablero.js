@@ -243,6 +243,28 @@
         }
     }
 
+    async function animarPrevia(duracion) {
+        const giros = cartas.map(carta => carta.querySelector(".carta-giro"));
+        const estilo = getComputedStyle(giros[0]);
+        const tramo = Math.min(0.5, parseFloat(estilo.transitionDuration) * 1000 / duracion);
+        const cerrada = "rotateY(0deg)";
+        const abierta = "rotateY(180deg)";
+        const fotogramas = tramo > 0 ? [
+            {transform: cerrada, offset: 0, easing: estilo.transitionTimingFunction},
+            {transform: abierta, offset: tramo},
+            {transform: abierta, offset: 1 - tramo, easing: estilo.transitionTimingFunction},
+            {transform: cerrada, offset: 1},
+        ] : [{transform: abierta}, {transform: abierta}];
+
+        const inicio = document.timeline.currentTime;
+        const animaciones = giros.map(giro => {
+            const animacion = giro.animate(fotogramas, {duration: duracion});
+            animacion.startTime = inicio;
+            return animacion;
+        });
+        await Promise.allSettled(animaciones.map(animacion => animacion.finished));
+    }
+
     async function mostrarPrevia() {
         const rutas = JSON.parse(document.getElementById("imagenes-previa").textContent);
         mensaje.textContent = "Preparando vista previa…";
@@ -263,19 +285,21 @@
             imagen.src = rutaImagen(info.imagen);
             return imagen;
         });
-        const disponible = datos.restante_ms - (performance.now() - solicitud);
-        if (disponible <= 0) return;
-        await decodificarPrevia(caras, disponible);
-        if (performance.now() - solicitud >= datos.restante_ms) return;
+        try {
+            const disponible = datos.restante_ms - (performance.now() - solicitud);
+            if (disponible <= 0) return;
+            await decodificarPrevia(caras, disponible);
 
-        mensaje.textContent = "¡Memoriza las cartas descubiertas!";
-        const giro = cartas[0].querySelector(".carta-giro");
-        const duracionGiro = parseFloat(getComputedStyle(giro).transitionDuration) * 1000;
-        tablero.classList.add("animando-previa", "vista-previa");
-        await new Promise(resolve => setTimeout(resolve, datos.restante_ms - duracionGiro));
-        tablero.classList.remove("vista-previa");
-        await Promise.allSettled(giro.getAnimations().map(animacion => animacion.finished));
-        tablero.classList.remove("animando-previa");
+            tablero.classList.add("animando-previa");
+            await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+            if (performance.now() - solicitud >= datos.restante_ms) return;
+
+            mensaje.textContent = "¡Memoriza las cartas descubiertas!";
+            await animarPrevia(datos.restante_ms);
+        } finally {
+            tablero.classList.remove("animando-previa");
+            for (const imagen of caras) imagen.removeAttribute("src");
+        }
         mensaje.textContent = "";
         liberar();
     }

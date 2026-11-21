@@ -97,8 +97,7 @@
             transform-style: preserve-3d;
             transition: transform .3s ease;
         }
-        .carta.volteada .carta-giro,
-        .tablero.vista-previa .carta-giro { transform: rotateY(180deg); }
+        .carta.volteada .carta-giro { transform: rotateY(180deg); }
         .carta-cara {
             position: absolute; inset: 0;
             width: 100%; height: 100%; border-radius: 12px;
@@ -222,7 +221,7 @@
 
     {% if mostrar_previa %}{{ imagenes_previa|json_script:"imagenes-previa" }}{% endif %}
     <script defer src="{% static 'memory/js/efectos_y_frases.js' %}?v=2"></script>
-    <script defer src="{% static 'memory/js/tablero.js' %}?v=3"></script>
+    <script defer src="{% static 'memory/js/tablero.js' %}?v=4"></script>
     <script defer src="{% static 'memory/js/estado_y_audio.js' %}?v=14"></script>
     <script defer src="{% static 'memory/js/menu_opciones.js' %}?v=6"></script>
 </body>

@@ -129,16 +129,33 @@ class TableroTactilTests(StaticLiveServerTestCase):
                 }, 300)));
             };
             window.girosPrevia = [];
-            for (const tipo of ['transitionstart', 'transitionend']) {
-                document.addEventListener(tipo, evento => {
-                    if (evento.propertyName !== 'transform' || !evento.target.matches('.carta-giro')) return;
-                    girosPrevia.push({
-                        tipo,
-                        posicion: Number(evento.target.closest('.carta').dataset.posicion),
-                        instante: evento.timeStamp,
-                        duracion: evento.elapsedTime,
-                    });
-                });
+            window.muestrasPrevia = {};
+            const animate = Element.prototype.animate;
+            Element.prototype.animate = function (...argumentos) {
+                const giro = animate.apply(this, argumentos);
+                if (!this.matches('.animando-previa .carta-giro')) return giro;
+                girosPrevia.push(giro);
+                if (girosPrevia.length === 1) requestAnimationFrame(muestrear);
+                return giro;
+            };
+            function muestrear() {
+                const primero = girosPrevia[0];
+                if (primero.playState === 'finished') return;
+                const transcurrido = primero.currentTime;
+                const restante = primero.effect.getTiming().duration - transcurrido;
+                let fase;
+                if (transcurrido > 80 && transcurrido < 220) fase = 'apertura';
+                if (transcurrido > 350 && restante > 350) fase = 'pausa';
+                if (restante > 80 && restante < 220) fase = 'cierre';
+                if (fase && !muestrasPrevia[fase]) {
+                    const giros = [...document.querySelectorAll('.carta-giro')];
+                    muestrasPrevia[fase] = {
+                        angulos: giros.map(giro => new DOMMatrix(getComputedStyle(giro).transform).m11),
+                        habilitadas: document.querySelectorAll('.carta[aria-disabled=false]').length,
+                    };
+                    giros[0].closest('.carta').click();
+                }
+                requestAnimationFrame(muestrear);
             }
             new MutationObserver(cambios => {
                 for (const cambio of cambios) {
@@ -148,11 +165,10 @@ class TableroTactilTests(StaticLiveServerTestCase):
                     fasesPrevia.push({
                         instante: performance.now(),
                         perspectiva: getComputedStyle(cartas[0]).perspective,
-                        apertura: tablero.classList.contains('vista-previa'),
+                        activa: tablero.classList.contains('animando-previa'),
                         listas: cartas.filter(carta => carta.querySelector('.carta-personaje').naturalWidth > 0).length,
                         habilitadas: cartas.filter(carta => carta.getAttribute('aria-disabled') === 'false').length,
                     });
-                    if (tablero.classList.contains('animando-previa')) cartas[0].click();
                 }
             }).observe(document, {attributes: true, subtree: true});
         """)
@@ -170,29 +186,41 @@ class TableroTactilTests(StaticLiveServerTestCase):
                     consultas = self.js("performance.getEntriesByType('resource').filter(r => r.name.includes('/vista-previa/')).length")
                     self.assertEqual(consultas, int(bool(duracion)))
                     if duracion:
-                        self.assertEqual([fase["apertura"] for fase in fases], [True, False, False])
-                        self.assertEqual([fase["habilitadas"] for fase in fases], [0, 0, total])
-                        self.assertEqual([fase["perspectiva"] for fase in fases], ["650px", "650px", "none"])
-                        self.assertEqual(fases[0]["listas"], total)
+                        self.assertEqual([fase["activa"] for fase in fases], [True, False])
+                        self.assertEqual([fase["habilitadas"] for fase in fases], [0, total])
+                        self.assertEqual([fase["perspectiva"] for fase in fases], ["650px", "none"])
+                        self.assertEqual([fase["listas"] for fase in fases], [total, 0])
                         self.assertGreaterEqual(fases[0]["instante"], self.js("precargaCompleta"))
-                        self.assertAlmostEqual(fases[1]["instante"] - fases[0]["instante"], duracion - 300, delta=90)
-                        self.assertAlmostEqual(fases[2]["instante"] - fases[0]["instante"], duracion, delta=120)
-                        self.cdp("Runtime.evaluate", expression="new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))", awaitPromise=True)
-                        giros = self.js("girosPrevia")
-                        self.assertEqual(len(giros), 4 * total, [(giro["tipo"], giro["duracion"]) for giro in giros])
-                        for indice, tipo in enumerate(("transitionstart", "transitionend") * 2):
-                            grupo = giros[indice * total : (indice + 1) * total]
-                            self.assertEqual({giro["tipo"] for giro in grupo}, {tipo})
-                            self.assertEqual(sorted(giro["posicion"] for giro in grupo), list(range(total)))
-                            instante = [giro["instante"] for giro in grupo]
-                            self.assertLess(max(instante) - min(instante), 35)
-                            if tipo == "transitionend":
-                                self.assertTrue(all(abs(giro["duracion"] - 0.3) < 0.01 for giro in grupo))
+                        self.assertAlmostEqual(fases[1]["instante"] - fases[0]["instante"], duracion, delta=120)
+                        giros = self.js("""girosPrevia.map(giro => ({
+                            inicio: giro.startTime,
+                            duracion: giro.effect.getTiming().duration,
+                            estado: giro.playState,
+                            puntos: giro.effect.getKeyframes().map(fotograma => fotograma.offset),
+                        }))""")
+                        self.assertEqual(len(giros), total)
+                        self.assertEqual(len({giro["inicio"] for giro in giros}), 1)
+                        for giro in giros:
+                            self.assertEqual(giro["duracion"], duracion)
+                            self.assertEqual(giro["estado"], "finished")
+                            self.assertEqual(giro["puntos"], [0, 300 / duracion, 1 - 300 / duracion, 1])
+                        muestras = self.js("muestrasPrevia")
+                        self.assertEqual(set(muestras), {"apertura", "pausa", "cierre"})
+                        for fase, muestra in muestras.items():
+                            self.assertEqual(muestra["habilitadas"], 0)
+                            angulos = muestra["angulos"]
+                            self.assertEqual(len(angulos), total)
+                            self.assertAlmostEqual(max(angulos), min(angulos), delta=0.01)
+                            if fase == "pausa":
+                                self.assertAlmostEqual(angulos[0], -1)
+                            else:
+                                self.assertLess(abs(angulos[0]), 0.98)
                     else:
                         self.assertEqual(fases, [])
-                        self.assertEqual(self.js("girosPrevia"), [])
+                        self.assertEqual(self.js("girosPrevia.length"), 0)
                     self.assertTrue(self.js("""[...document.querySelectorAll('.carta-giro')]
                         .every(giro => getComputedStyle(giro).transform === 'none')"""))
+                    self.assertEqual(self.cantidad(".carta-personaje[src]"), 0)
                     self.assertFalse(Movimiento.objects.filter(partida=partida).exists())
 
     def test_toques_rapidos_timeout_y_reintento_idempotente(self):
