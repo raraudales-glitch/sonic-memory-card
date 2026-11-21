@@ -3,6 +3,7 @@ from django.urls import path
 
 from . import views
 from .estadisticas import perfil_jugador
+from .ranking import top_semanal, top_sincronizado
 
 
 app_name = "memory"
@@ -20,6 +21,9 @@ urlpatterns = [
         perfil_jugador,
         name="perfil"
     ),
+
+    path("top-semanal/", top_semanal, name="top_semanal"),
+    path("top-sincronizado/", top_sincronizado, name="top_sincronizado"),
 
     path(
         "partidas/nueva/",

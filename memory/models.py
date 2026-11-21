@@ -217,6 +217,24 @@ class Movimiento(models.Model):
         )
 
 
+class ResultadoRanking(models.Model):
+    partida_id = models.UUIDField(primary_key=True)
+    jugador = models.CharField(max_length=150)
+    dificultad = models.CharField(max_length=10, choices=Partida.Dificultad.choices)
+    puntaje = models.PositiveIntegerField()
+    finalizada_en = models.DateTimeField(db_index=True)
+
+
+class EnvioRanking(models.Model):
+    partida = models.ForeignKey(Partida, on_delete=models.CASCADE, related_name="envios_ranking")
+    destino = models.CharField(max_length=255)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["partida", "destino"], name="envio_ranking_unico_por_destino")
+        ]
+
+
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
 def crear_perfil_jugador(sender, instance, created, **kwargs):
     if created:

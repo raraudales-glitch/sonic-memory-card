@@ -1,0 +1,93 @@
+{% extends "memory/perfil.html" %}
+{% load static %}
+{% block titulo %}TOP 5 GLOBAL SEMANAL{% endblock %}
+
+{% block estilos %}
+<style>
+    .ranking-titulo { display: flex; align-items: center; gap: 16px; }
+    .ranking-titulo img { width: 64px; height: auto; }
+    .ranking-tabla { width: 100%; border-collapse: collapse; color: #e4efff; }
+    .ranking-tabla th, .ranking-tabla td {
+        padding: 12px 8px;
+        text-align: left;
+        border-bottom: 1px solid #234b78;
+        overflow-wrap: anywhere;
+    }
+    .ranking-tabla th { color: #b6cce9; }
+    .ranking-tabla td:nth-child(3) { color: #ffdf00; }
+    .ranking-semanas { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; }
+    .ranking-semanas [aria-current] { border-color: #ffdf00; color: #ffdf00; }
+    @media (max-width: 550px) {
+        .ranking-tabla th, .ranking-tabla td { padding: 10px 4px; font-size: .85rem; }
+        .ranking-titulo img { width: 45px; }
+    }
+</style>
+{% endblock %}
+
+{% block contenido %}
+<section class="perfil-header">
+    <div class="ranking-titulo">
+        <img src="{% static 'memory/images/sonic-logo.gif' %}" alt="">
+        <h1>TOP 5 GLOBAL SEMANAL</h1>
+    </div>
+    {% if inicio %}
+        <p class="detalle">{{ inicio|date:"j F Y" }} – {{ fin|date:"j F Y" }} · Hora de Tegucigalpa</p>
+    {% endif %}
+    {% if ranking %}
+        <p class="estado-activo">
+            {% if ranking.posicion %}
+                Tu posición es #{{ ranking.posicion }}.
+            {% elif ranking.vinculado %}
+                Todavía no tienes victorias oficiales{% if sincronizado %} sincronizadas{% endif %} para esta semana.
+            {% else %}
+                Tu cuenta aún no está vinculada al ranking global.
+            {% endif %}
+        </p>
+    {% endif %}
+</section>
+
+{% if no_disponible or semana_invalida %}
+    <section class="seccion">
+        {% if no_disponible %}
+            <p role="status">El ranking global no está disponible en este momento. Puedes seguir jugando localmente.</p>
+        {% else %}
+            <p>Selecciona una semana válida.</p>
+        {% endif %}
+        <p class="detalle"><a class="volver" href="{% url ruta_ranking %}">Semana actual</a></p>
+    </section>
+{% else %}
+    <section class="seccion">
+        <h2>Clasificación {% if sincronizado %}entre instalaciones{% else %}del servidor{% endif %}</h2>
+        {% if ranking.mejores %}
+            <table class="ranking-tabla">
+                <thead><tr><th scope="col">Puesto</th><th scope="col">Jugador</th><th scope="col">Puntos oficiales</th><th scope="col">Victorias</th></tr></thead>
+                <tbody>
+                    {% for fila in ranking.mejores %}
+                        <tr>
+                            <td>{{ forloop.counter }}{% if forloop.counter == 1 %} <span aria-label="Oro">🥇</span>{% elif forloop.counter == 2 %} <span aria-label="Plata">🥈</span>{% elif forloop.counter == 3 %} <span aria-label="Bronce">🥉</span>{% endif %}</td>
+                            <th scope="row">{{ fila.jugador }}</th>
+                            <td>{{ fila.puntos }}</td>
+                            <td>{{ fila.victorias }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p class="detalle">Todavía no hay victorias oficiales{% if sincronizado %} sincronizadas{% endif %} para esta semana.</p>
+        {% endif %}
+    </section>
+    <section class="seccion">
+        <h2>Semanas anteriores</h2>
+        {% if ranking.anteriores %}
+            <ul class="ranking-semanas">
+                <li><a class="volver" href="{% url ruta_ranking %}">Semana actual</a></li>
+                {% for semana in ranking.anteriores %}
+                    <li><a class="volver" href="?semana={{ semana|urlencode }}"{% if semana == ranking.inicio %} aria-current="page"{% endif %}>{{ semana }}</a></li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="detalle">Aún no hay resultados de semanas anteriores.</p>
+        {% endif %}
+    </section>
+{% endif %}
+{% endblock %}

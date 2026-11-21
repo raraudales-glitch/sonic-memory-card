@@ -170,6 +170,46 @@ Si inicializaste todas las cuentas, puedes iniciar sesión con `ADMIN` para veri
 
 El juego está disponible en [Sonic Memory Card](http://localhost:8081/).
 
+### TOP 5 semanal global
+
+El botón **🏆 TOP 5** del menú y del tablero consulta las victorias oficiales de todos los usuarios en la base PostgreSQL de la instalación actual. Cuando todos juegan en el servidor compartido de Oracle, esa base alimenta la misma clasificación para todos ellos. Durante una partida, el botón abre otra pestaña y el temporizador sigue corriendo.
+
+La clasificación opcional entre instalaciones independientes está en `/top-sincronizado/`. Esa página consulta el servicio central configurado y muestra un aviso si no responde. La semana va de lunes a domingo en `America/Tegucigalpa`. Cuenta el momento de finalización de cada victoria oficial. La clasificación ordena por puntos acumulados, luego por victorias y finalmente por quién alcanzó antes su total. Si los tres criterios coinciden, se ordena por nombre de usuario. Las semanas con resultados quedan disponibles en el historial.
+
+#### Desplegar el servicio central
+
+1. Prepara un servidor con Docker Compose, un dominio real que apunte al servidor y puertos públicos 80 y 443 para Caddy. Usa una instalación y una base PostgreSQL separadas de las instalaciones de juego. Usa un proyecto Compose distinto, como `sonic-ranking-central`, para aislar sus volúmenes.
+2. En el `.env` privado de ese servidor, configura las credenciales de PostgreSQL y `DJANGO_SECRET_KEY` como en la instalación local. En `RANKING_HOSTS`, escribe el dominio real, sin `https://` ni rutas. La configuración central habilita la API de clasificación, desactiva el modo depuración y usa Caddy para obtener el certificado TLS. Publica solo el proxy. Django confía en `X-Forwarded-Proto` del proxy y su puerto interno debe permanecer sin publicar.
+3. Emite un token aleatorio distinto para cada cuenta e instalación con un generador criptográfico, como `secrets.token_urlsafe(32)`. Entrega el token en privado y guarda en el servidor central solo su resumen SHA-256 hexadecimal. Configura `RANKING_CREDENCIALES_CENTRALES` como un objeto JSON que asocia cada resumen con un nombre global. Si la misma persona juega en más de una instalación, vincula sus tokens al mismo nombre global, con la misma ortografía y mayúsculas. Dos personas con el mismo nombre local deben recibir identidades globales distintas. Después de cambiar esta configuración, vuelve a crear el contenedor web para cargarla.
+4. Construye el servicio, aplica las migraciones y ponlo en marcha:
+
+```powershell
+docker compose -p sonic-ranking-central -f docker-compose.yml -f docker-compose.ranking-central.yml build web
+docker compose -p sonic-ranking-central -f docker-compose.yml -f docker-compose.ranking-central.yml run --rm web python manage.py migrate
+docker compose -p sonic-ranking-central -f docker-compose.yml -f docker-compose.ranking-central.yml up -d
+```
+
+Comprueba por HTTPS que `/api/ranking/semanal/` responde con la semana y el tablero. El servidor central no requiere cargar personajes ni crear usuarios de juego. La consulta pública muestra los nombres y resultados del TOP 5. La credencial asociada permite consultar además la posición individual.
+
+#### Conectar una instalación de juego
+
+1. En el `.env` local, deja `RANKING_CENTRAL=0`. Pon en `RANKING_URL` el origen HTTPS real del servidor central, sin rutas. Configura `RANKING_CREDENCIALES_LOCALES` como un objeto JSON que asocie el nombre de usuario local exacto con el token privado entregado para esa cuenta. Mantén el archivo fuera de Git.
+2. Construye la aplicación, migra y arranca el sincronizador:
+
+```powershell
+docker compose up -d --build
+docker compose exec web python manage.py migrate
+docker compose --profile ranking up -d --build
+```
+
+El sincronizador envía victorias oficiales guardadas de las cuentas vinculadas, incluidas las anteriores, a su semana original. Si la conexión falla, los resultados pendientes se conservan localmente y vuelven a intentarse. Para ejecutar un envío puntual, usa `docker compose exec web python manage.py sincronizar_ranking`. Si no hay servidor configurado o no responde, aparece un aviso y se puede seguir jugando. La pantalla nunca sustituye un tablero global por puntos locales.
+
+#### Qué verifica el sistema
+
+El navegador juega contra su Django local y no envía resultados al servicio central. El sincronizador lee las victorias oficiales registradas por Django. El servicio central identifica al jugador por su credencial, valida el formato, los límites de puntaje y el estado oficial, y guarda una sola entrada por UUID de partida. Un reenvío idéntico es válido, incluso si llegó desde otra instalación vinculada al mismo jugador.
+
+El servicio central confía en que los administradores de cada instalación ejecutan el código distribuido. Quien controle su Docker, PostgreSQL o token puede alterar los datos locales o presentar un resultado inventado como oficial. HTTPS y la deduplicación no prueban cómo se jugó una partida. Para una clasificación competitiva verificable, el servidor central tendría que controlar las partidas oficiales o validar jugadas contra un tablero y un reloj que él mismo administre.
+
 ## 6. Comandos de administración local
 
 | Acción | Comando |

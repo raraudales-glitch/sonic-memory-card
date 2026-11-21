@@ -7,7 +7,7 @@
         name="viewport"
         content="width=device-width, initial-scale=1.0"
     >
-    <title>Mi perfil | Sonic Memory Card</title>
+    <title>{% block titulo %}Mi perfil{% endblock %} | Sonic Memory Card</title>
 
     <style>
         * {
@@ -289,6 +289,7 @@
             }
         }
     </style>
+    {% block estilos %}{% endblock %}
 </head>
 
 <body>
@@ -308,6 +309,7 @@
         </a>
     </header>
 
+    {% block contenido %}
     <section class="perfil-header">
         <h1>MI PERFIL</h1>
 
@@ -437,6 +439,8 @@
         a registrar estadísticas.
     </div>
     {% endif %}
+
+    {% endblock %}
 
     <footer class="pie">
         Sonic Memory Card

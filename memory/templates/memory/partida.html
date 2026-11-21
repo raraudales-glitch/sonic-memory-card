@@ -48,7 +48,13 @@
             font-size: 26px; font-weight: 900; letter-spacing: 2px;
             color: white; text-shadow: 0 0 12px rgba(0,140,255,.9);
         }
-        .info-superior { display: flex; align-items: center; gap: 24px; }
+        .info-superior { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 16px; }
+        .navegacion-juego { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; }
+        .navegacion-juego a {
+            padding: 11px 14px; border-radius: 8px; background: #0969da;
+            color: white; text-decoration: none; font-size: 14px; font-weight: bold;
+        }
+        .navegacion-juego a:hover { background: #1784ff; }
         .dato { text-align: center; }
         .dato span {
             display: block; font-size: 11px; color: #99a8be;
@@ -162,6 +168,10 @@
                 <span>Fallos permitidos</span>
                 <strong><span id="fallos-actuales">{{ partida.errores }}</span> / {{ nivel.fallos }}</strong>
             </div>
+            <nav class="navegacion-juego" aria-label="Perfil y clasificación">
+                <a href="{% url 'memory:perfil' %}" target="_blank" rel="noopener">Mi perfil</a>
+                <a href="{% url 'memory:top_semanal' %}" target="_blank" rel="noopener" aria-label="TOP 5 (abre en otra pestaña)">🏆 TOP 5</a>
+            </nav>
             <a href="{% url 'memory:inicio' %}{% if partida.practica %}?practica=1{% endif %}" class="btn-salir">Salir</a>
         </div>
     </header>
