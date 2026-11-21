@@ -26,8 +26,10 @@ class TableroTactilTests(StaticLiveServerTestCase):
 
         perfil = TemporaryDirectory(ignore_cleanup_errors=True)
         self.addCleanup(perfil.cleanup)
+        self.ventana_real = os.environ.get("CHROMIUM_HEADED") == "1"
+        interfaz = ["--window-size=1280,950"] if self.ventana_real else ["--headless=new", "--disable-gpu"]
         navegador = subprocess.Popen([
-            binario, "--headless=new", "--no-first-run", "--disable-background-networking", "--disable-gpu",
+            binario, *interfaz, "--no-first-run", "--disable-background-networking",
             "--remote-debugging-port=0", f"--user-data-dir={perfil.name}", "about:blank",
         ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         self.addCleanup(self.cerrar, navegador)
@@ -71,9 +73,15 @@ class TableroTactilTests(StaticLiveServerTestCase):
             sleep(0.05)
         self.fail("La condición no se cumplió a tiempo")
 
-    def abrir(self, partida, ancho, *, movil=True):
+    def configurar_vista(self, ancho, *, movil):
         self.cdp("Emulation.setTouchEmulationEnabled", enabled=movil)
-        self.cdp("Emulation.setDeviceMetricsOverride", mobile=movil, width=ancho, height=800, deviceScaleFactor=2)
+        if self.ventana_real and not movil:
+            self.cdp("Emulation.clearDeviceMetricsOverride")
+        else:
+            self.cdp("Emulation.setDeviceMetricsOverride", mobile=movil, width=ancho, height=800, deviceScaleFactor=2)
+
+    def abrir(self, partida, ancho, *, movil=True):
+        self.configurar_vista(ancho, movil=movil)
         url = self.live_server_url + ruta("jugar_partida", partida)
         self.cdp("Page.navigate", url=url)
         self.esperar(lambda: self.js(
@@ -200,8 +208,7 @@ class TableroTactilTests(StaticLiveServerTestCase):
             }).observe(document, {attributes: true, subtree: true});
         """)
         for ancho in (390, 1200):
-            self.cdp("Emulation.setTouchEmulationEnabled", enabled=ancho == 390)
-            self.cdp("Emulation.setDeviceMetricsOverride", mobile=ancho == 390, width=ancho, height=800, deviceScaleFactor=2)
+            self.configurar_vista(ancho, movil=ancho == 390)
             for dificultad, total, duracion in (("FACIL", 16, 3000), ("NORMAL", 20, 1500), ("DIFICIL", 36, 0)):
                 with self.subTest(ancho=ancho, dificultad=dificultad):
                     partida = crear(self.client, dificultad)
@@ -259,6 +266,11 @@ class TableroTactilTests(StaticLiveServerTestCase):
         self.cdp("Page.enable")
         self.cdp("Page.addScriptToEvaluateOnNewDocument", source="""
             window.fotogramasPrevia = [];
+            document.addEventListener('DOMContentLoaded', () => {
+                const estilo = document.createElement('style');
+                estilo.textContent = '@media (pointer: fine) { body .tablero .carta-giro { transition: none !important; } }';
+                document.head.append(estilo);
+            });
             const animate = Element.prototype.animate;
             Element.prototype.animate = function (...args) {
                 const animacion = animate.apply(this, args);
@@ -276,6 +288,11 @@ class TableroTactilTests(StaticLiveServerTestCase):
                 self.assertTrue(self.js("document.querySelector('#preferencia-giros').offsetParent !== null"))
                 estado = self.js("document.querySelector('#preferencia-giros').getAttribute('aria-pressed')")
                 self.assertEqual(estado, str(activados).lower())
+                self.assertTrue(self.js("matchMedia('(pointer: fine)').matches"))
+                transicion = self.js("getComputedStyle(document.querySelector('.carta-giro')).transitionDuration")
+                self.assertEqual(transicion, "0.3s" if activados else "0s")
+                recurso = self.js("performance.getEntriesByType('resource').find(r => r.name.includes('tablero.js')).name")
+                self.assertTrue(recurso.endswith("?v=6"))
                 poses = ["rotateY(180deg)"] * 2
                 if activados:
                     poses = ["rotateY(0deg)", *poses, "rotateY(0deg)"]

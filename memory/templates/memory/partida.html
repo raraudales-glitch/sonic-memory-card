@@ -92,10 +92,11 @@
         .carta.pendiente { outline: 2px solid #77c8ff; }
         .carta.emparejada { cursor: default; box-shadow: 0 0 9px #00ff78; }
         .carta-giro {
+            --duracion-giro: .3s;
             position: absolute; inset: 0;
             pointer-events: none;
             transform-style: preserve-3d;
-            transition: transform .3s ease;
+            transition: transform var(--duracion-giro) ease;
         }
         .carta.volteada .carta-giro { transform: rotateY(180deg); }
         .carta-cara {
@@ -110,6 +111,7 @@
             object-fit: contain;
             background: #080c19;
         }
+        .tablero.giros-activados .carta-giro { transition: transform var(--duracion-giro) ease !important; }
         .tablero.animando-previa .carta { perspective: 650px; }
         .tablero.animando-previa .numero-carta { visibility: hidden; }
         @media (hover: hover) and (pointer: fine) {
@@ -229,7 +231,7 @@
 
     {% if mostrar_previa %}{{ imagenes_previa|json_script:"imagenes-previa" }}{% endif %}
     <script defer src="{% static 'memory/js/efectos_y_frases.js' %}?v=2"></script>
-    <script defer src="{% static 'memory/js/tablero.js' %}?v=5"></script>
+    <script defer src="{% static 'memory/js/tablero.js' %}?v=6"></script>
     <script defer src="{% static 'memory/js/estado_y_audio.js' %}?v=14"></script>
     <script defer src="{% static 'memory/js/menu_opciones.js' %}?v=6"></script>
 </body>
