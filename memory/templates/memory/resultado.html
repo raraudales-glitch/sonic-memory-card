@@ -1,0 +1,14 @@
+{% extends "memory/pagina.html" %}
+{% block titulo %}Resultado{% endblock %}
+{% block contenido %}
+<h1>{{ partida.get_estado_display }}</h1>
+<dl>
+    <dt>Dificultad</dt><dd>{{ partida.get_dificultad_display }}</dd>
+    <dt>Modo</dt><dd>{{ partida.practica|yesno:"Práctica,Oficial" }}</dd>
+    <dt>Duración</dt><dd>{{ partida.duracion_segundos }} s</dd>
+    <dt>Fallos</dt><dd>{{ partida.errores }}</dd>
+    <dt>Movimientos</dt><dd>{{ partida.movimientos }}</dd>
+    {% if not partida.practica %}<dt>Puntaje</dt><dd>{{ partida.puntaje }}</dd>{% endif %}
+</dl>
+<p><a href="{% url 'memory:jugar' %}{% if partida.practica %}?practica=1{% endif %}">Jugar otra vez</a></p>
+{% endblock %}

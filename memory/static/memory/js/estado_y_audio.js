@@ -9,8 +9,6 @@
 
     if (!id) return;
 
-    const prefijo = `/partidas/${id}/`;
-
     const reloj = document.getElementById("tiempo-juego");
     const fallos = document.getElementById("fallos-actuales");
     const mensaje = document.getElementById("mensaje-juego");
@@ -406,9 +404,15 @@
         volver.href = practica ? "/?practica=1" : "/";
         volver.textContent = "Volver al menú";
 
+        const resultado = document.createElement("a");
+        resultado.href = raiz.dataset.resultadoUrl;
+        resultado.textContent = "Ver resultado";
+
         tarjeta.append(
             titulo,
             resumen,
+            resultado,
+            document.createTextNode(" "),
             volver
         );
 
@@ -455,7 +459,7 @@
 
         try {
             const respuesta = await fetch(
-                `${prefijo}estado/`,
+                raiz.dataset.estadoUrl,
                 {
                     cache: "no-store",
                     credentials: "same-origin"
@@ -471,7 +475,7 @@
             let datos = await respuesta.json();
 
             if (datos.cierre_pendiente) {
-                const cierre = await fetch(`${prefijo}estado/`, {
+                const cierre = await fetch(raiz.dataset.cierreUrl, {
                     method: "POST",
                     credentials: "same-origin",
                     headers: {
@@ -575,7 +579,7 @@
 
             try {
                 await fetch(
-                    `${prefijo}abandonar/`,
+                    raiz.dataset.abandonoUrl,
                     {
                         method: "POST",
                         headers: {

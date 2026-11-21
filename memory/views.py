@@ -53,6 +53,14 @@ def inicio(request):
 
 
 @login_required
+@require_GET
+def seleccionar_dificultad(request):
+    return render(request, "memory/inicio.html", {
+        "practica": request.GET.get("practica") == "1",
+    })
+
+
+@login_required
 @require_POST
 def nueva_partida(request):
     try:
@@ -258,6 +266,11 @@ def estado_partida(request, partida_id):
         )
 
 
+@require_GET
+def estado_api(request, partida_id):
+    return estado_partida(request, partida_id)
+
+
 @login_required
 @require_POST
 def abandonar(request, partida_id):
@@ -281,6 +294,7 @@ def abandonar(request, partida_id):
 
 @login_required
 @require_POST
+@never_cache
 def voltear(request, partida_id):
     try:
         datos = leer_objeto_json(request, {"posicion", "seq_num"})

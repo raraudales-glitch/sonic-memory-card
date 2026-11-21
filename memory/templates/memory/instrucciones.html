@@ -1,0 +1,22 @@
+{% extends "memory/pagina.html" %}
+{% block titulo %}Instrucciones{% endblock %}
+{% block contenido %}
+<h1>Instrucciones</h1>
+<ol>
+    <li>Elige una dificultad y memoriza las cartas durante la vista previa, si el nivel la ofrece.</li>
+    <li>Selecciona dos cartas. Si coinciden, quedan descubiertas. Si son distintas, se suma un fallo y se ocultan antes de que puedas volver a jugar.</li>
+    <li>Encuentra todas las parejas antes de agotar el tiempo y sin superar los fallos permitidos.</li>
+</ol>
+<div class="tabla">
+    <table>
+        <thead><tr><th>Nivel</th><th>Tablero</th><th>Parejas</th><th>Tiempo</th><th>Fallos permitidos</th><th>Vista previa</th></tr></thead>
+        <tbody>
+        {% for etiqueta, nivel in niveles %}
+            <tr><th scope="row">{{ etiqueta }}</th><td>{{ nivel.filas }} × {{ nivel.columnas }}</td><td>{{ nivel.parejas }}</td><td>{{ nivel.tiempo }} s</td><td>{{ nivel.fallos }}</td><td>{{ nivel.vista_previa }} s</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+<p>Las victorias oficiales obtienen puntos según la dificultad, el tiempo restante y los fallos. El modo práctica permite entrenar sin puntuar.</p>
+<p><a href="{% url 'memory:jugar' %}">Elegir dificultad</a></p>
+{% endblock %}

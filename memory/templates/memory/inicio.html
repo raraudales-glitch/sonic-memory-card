@@ -176,9 +176,18 @@
         .contenedor {
             min-height: calc(100vh - 84px);
             display: flex;
+            flex-direction: column;
+            gap: 1rem;
             align-items: center;
             justify-content: center;
             padding: 50px 20px;
+        }
+
+        .navegacion-menu {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: .5rem;
         }
 
         .panel {
@@ -420,6 +429,12 @@
     </header>
 
     <main class="contenedor">
+        <nav class="navegacion-menu" aria-label="Opciones del juego">
+            <a class="btn-superior btn-perfil" href="{% url 'memory:instrucciones' %}">Instrucciones</a>
+            <a class="btn-superior btn-perfil" href="{% url 'memory:jugar' %}">Jugar</a>
+            <a class="btn-superior btn-perfil" href="{% url 'memory:historial' %}">Historial</a>
+            <a class="btn-superior btn-perfil" href="{% url 'memory:clasificacion' %}">Clasificación</a>
+        </nav>
 
         <section class="panel">
 

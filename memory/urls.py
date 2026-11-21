@@ -4,12 +4,22 @@ from django.urls import path
 from . import views
 from .estadisticas import perfil_jugador
 from .ranking import top_semanal, top_sincronizado
+from . import paginas
 
 
 app_name = "memory"
 
 
 urlpatterns = [
+    path("instrucciones/", paginas.instrucciones, name="instrucciones"),
+    path("jugar/", views.seleccionar_dificultad, name="jugar"),
+    path("historial/", paginas.historial, name="historial"),
+    path("clasificacion/", paginas.clasificacion, name="clasificacion"),
+    path("salud/", paginas.salud, name="salud"),
+    path("partidas/<uuid:partida_id>/resultado/", paginas.resultado, name="resultado"),
+    path("api/partidas/<uuid:partida_id>/estado/", views.estado_api, name="estado_api"),
+    path("api/partidas/<uuid:partida_id>/accion/", views.voltear, name="accion_api"),
+    path("api/partidas/<uuid:partida_id>/abandonar/", views.abandonar, name="abandonar_api"),
     path(
         "",
         views.inicio,

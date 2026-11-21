@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block titulo %}{% endblock %} | Sonic Memory Card</title>
+    <style>
+        body { margin: 0; background: #0c1730; color: #f1f5ff; font: 1rem/1.55 system-ui, sans-serif; }
+        main { max-width: 56rem; margin: 2rem auto; padding: 1.5rem; background: #172749; border-radius: 1rem; }
+        nav { display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; }
+        a { color: #9cddff; }
+        [aria-current="page"] { color: #ffdd78; font-weight: bold; }
+        .tabla { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: .65rem; border-bottom: 1px solid #516480; text-align: left; }
+        dt { font-weight: bold; }
+        dd { margin: 0 0 .75rem; }
+        @media (max-width: 60rem) { main { margin: 1rem; } }
+    </style>
+</head>
+<body>
+    <main>
+        <nav aria-label="Navegación principal">
+            <a href="{% url 'memory:inicio' %}">Inicio</a>
+            <a href="{% url 'memory:instrucciones' %}">Instrucciones</a>
+            <a href="{% url 'memory:jugar' %}">Jugar</a>
+            <a href="{% url 'memory:clasificacion' %}">Clasificación</a>
+            {% if user.is_authenticated %}
+                <a href="{% url 'memory:historial' %}">Historial</a>
+                <a href="{% url 'memory:perfil' %}">Mi perfil</a>
+            {% else %}
+                <a href="{% url 'cuentas_login' %}">Iniciar sesión</a>
+            {% endif %}
+        </nav>
+        {% block contenido %}{% endblock %}
+    </main>
+</body>
+</html>

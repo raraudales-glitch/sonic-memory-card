@@ -272,7 +272,7 @@ Cuando preparemos el despliegue, configuraremos el proxy para que sea el único 
 
 En este momento, `docker-compose.yml` ejecuta `python manage.py runserver` y publica el puerto 8000. **Eso nos sirve para desarrollo local, pero tendremos que cambiarlo antes de publicar el juego en internet.**
 
-## 9. Rutas que nos falta desarrollar
+## 9. Rutas de la sección 4.7
 
 | Método y ruta | Función |
 |---|---|
@@ -290,10 +290,14 @@ En este momento, `docker-compose.yml` ejecuta `python manage.py runserver` y pub
 | `GET /partidas/<uuid>/resultado/` | Resultado final |
 | `GET /perfil/` | Perfil y estadísticas |
 | `GET /historial/` | Partidas anteriores |
-| `GET /clasificacion/?nivel=facil` | Clasificación por dificultad |
+| `GET /clasificacion/?nivel=facil\|normal\|dificil` | TOP 10 histórico de victorias oficiales por dificultad |
 | `GET /salud/` | Comprobación del servicio y la base |
 
-De momento, la única ruta que tenemos registrada es **`/admin/`**. Iremos agregando las demás conforme desarrollemos el juego.
+La clasificación por dificultad muestra el mejor resultado de cada usuario y desempata por menor duración y fecha de finalización más antigua. El TOP 5 semanal sigue disponible en `/top-semanal/`.
+
+La acción de voltear recibe un objeto JSON con los enteros `posicion` (desde 0) y `seq_num` (desde 1). La acción y el abandono requieren una sesión, ser dueño de la partida y enviar el token CSRF. La consulta de estado requiere sesión y propiedad de la partida.
+
+`/salud/` verifica la base de datos con una consulta y devuelve `{"ok": true}` con HTTP 200 o `{"ok": false}` con HTTP 503.
 
 ## 10. Lo que nos falta completar
 
@@ -306,7 +310,7 @@ De momento, la única ruta que tenemos registrada es **`/admin/`**. Iremos agreg
 - [ ] Validar volteos y jugadas repetidas; controlar el tiempo con la hora del servidor.
 - [ ] Implementar tres niveles con los parámetros oficiales.
 - [ ] Calcular puntaje, victoria, derrota, tiempo agotado y abandono en el servidor.
-- [ ] Crear resultado, historial paginado, estadísticas y clasificación por dificultad.
+- [x] Crear resultado, historial paginado, estadísticas y clasificación por dificultad.
 - [ ] Incorporar animaciones, sonidos, música y controles separados de volumen.
 - [ ] Crear `CREDITOS.md` con fuente y licencia de recursos audiovisuales.
 

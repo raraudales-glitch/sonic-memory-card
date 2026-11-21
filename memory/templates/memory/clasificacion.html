@@ -1,0 +1,29 @@
+{% extends "memory/pagina.html" %}
+{% block titulo %}Clasificación{% endblock %}
+{% block contenido %}
+<h1>Clasificación por dificultad</h1>
+<nav aria-label="Dificultades">
+    {% for clave, etiqueta in niveles %}
+        <a href="?nivel={{ clave }}"{% if nivel == clave %} aria-current="page"{% endif %}>{{ etiqueta }}</a>
+    {% endfor %}
+</nav>
+{% if nivel %}
+    <p>Las 10 mejores victorias oficiales, con un resultado por jugador.</p>
+    {% if partidas %}
+        <div class="tabla">
+            <table>
+                <thead><tr><th>Puesto</th><th>Jugador</th><th>Puntaje</th><th>Duración</th><th>Fecha</th></tr></thead>
+                <tbody>
+                {% for partida in partidas %}
+                    <tr><td>{{ forloop.counter }}</td><th scope="row">{{ partida.usuario.perfil.alias|default:partida.usuario.username }}</th><td>{{ partida.puntaje }}</td><td>{{ partida.duracion_segundos }} s</td><td>{{ partida.fin_servidor|date:"d/m/Y H:i" }}</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p>Todavía no hay victorias oficiales en esta dificultad.</p>
+    {% endif %}
+{% else %}
+    <p>Elige una dificultad válida.</p>
+{% endif %}
+{% endblock %}

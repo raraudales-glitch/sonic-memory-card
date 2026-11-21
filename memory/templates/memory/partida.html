@@ -138,6 +138,11 @@
 </head>
 <body
     data-partida-id="{{ partida.id }}"
+    data-accion-url="{% url 'memory:accion_api' partida.id %}"
+    data-estado-url="{% url 'memory:estado_api' partida.id %}"
+    data-cierre-url="{% url 'memory:estado_partida' partida.id %}"
+    data-abandono-url="{% url 'memory:abandonar_api' partida.id %}"
+    data-resultado-url="{% url 'memory:resultado' partida.id %}"
     data-practica="{{ partida.practica|yesno:'true,false' }}"
     data-movimientos="{{ partida.movimientos|default:0 }}"
     data-tapa="{% static imagen_tapa %}"
@@ -193,7 +198,6 @@
     </main>
 
     <script>
-        const PARTIDA_ID = document.body.dataset.partidaId;
         const TAPA_CARTA = document.body.dataset.tapa;
         const STATIC_BASE = document.body.dataset.staticBase;
         let seqNum = Number(document.body.dataset.movimientos || 0) + 1;
@@ -214,7 +218,7 @@
 
         async function procesarCarta(posicion) {
             try {
-                const respuesta = await fetch(`/partidas/${PARTIDA_ID}/voltear/`, {
+                const respuesta = await fetch(document.body.dataset.accionUrl, {
                     method: 'POST',
                     credentials: 'same-origin',
                     headers: {
@@ -326,7 +330,7 @@
     </script>
 
 <script src="{% static 'memory/js/efectos_y_frases.js' %}"></script>
-<script src="{% static 'memory/js/estado_y_audio.js' %}?v=12"></script>
+<script src="{% static 'memory/js/estado_y_audio.js' %}?v=13"></script>
 <script src="{% static 'memory/js/menu_opciones.js' %}?v=6"></script>
 <script src="{% static 'memory/js/vista_previa.js' %}?v=2"></script>
 </body>

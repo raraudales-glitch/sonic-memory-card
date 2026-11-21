@@ -1,0 +1,37 @@
+{% extends "memory/pagina.html" %}
+{% block titulo %}Historial{% endblock %}
+{% block contenido %}
+<h1>Mi historial</h1>
+{% if pagina.object_list %}
+    <div class="tabla">
+        <table>
+            <thead><tr><th>Inicio</th><th>Nivel</th><th>Modo</th><th>Estado</th><th>Puntaje</th><th>Partida</th></tr></thead>
+            <tbody>
+            {% for partida in pagina %}
+                <tr>
+                    <td>{{ partida.inicio_servidor|date:"d/m/Y H:i" }}</td>
+                    <td>{{ partida.get_dificultad_display }}</td>
+                    <td>{{ partida.practica|yesno:"Práctica,Oficial" }}</td>
+                    <td>{{ partida.get_estado_display }}</td>
+                    <td>{{ partida.puntaje }}</td>
+                    <td>
+                        {% if partida.estado == "EN_CURSO" %}
+                            <a href="{% url 'memory:jugar_partida' partida.pk %}">Continuar</a>
+                        {% else %}
+                            <a href="{% url 'memory:resultado' partida.pk %}">Ver resultado</a>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <nav aria-label="Paginación">
+        {% if pagina.has_previous %}<a href="?pagina={{ pagina.previous_page_number }}">Anterior</a>{% endif %}
+        <span>Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
+        {% if pagina.has_next %}<a href="?pagina={{ pagina.next_page_number }}">Siguiente</a>{% endif %}
+    </nav>
+{% else %}
+    <p>Todavía no has jugado partidas.</p>
+{% endif %}
+{% endblock %}
