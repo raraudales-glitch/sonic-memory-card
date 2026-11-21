@@ -14,11 +14,11 @@ class Command(BaseCommand):
         parser.add_argument("--continuo", action="store_true")
 
     def handle(self, *args, **options):
-        if settings.RANKING_CENTRAL:
+        if getattr(settings, "RANKING_CENTRAL", False):
             raise CommandError("La sincronización se ejecuta en las instalaciones de juego.")
         try:
             destino = destino_global()
-            credenciales = mapa_credenciales(settings.RANKING_CREDENCIALES_LOCALES)
+            credenciales = mapa_credenciales(getattr(settings, "RANKING_CREDENCIALES_LOCALES", "{}"))
         except RankingNoDisponible as error:
             raise CommandError("Configura la dirección HTTPS y las credenciales locales del ranking.") from error
         if not credenciales:

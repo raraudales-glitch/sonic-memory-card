@@ -7,13 +7,14 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group, Permission
 from django.core.management import CommandError, call_command
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from memory.management.commands import crear_usuarios_iniciales
 from memory.models import Partida, PerfilJugador, Personaje
 
 
+@override_settings(SECURE_SSL_REDIRECT=False)
 class UsuariosInicialesTests(TestCase):
     nombres = ("ADMIN", "Stanley", "Nelson", "Astrid", "Rut", "Lester", "Gustavo")
     permisos_editor = {

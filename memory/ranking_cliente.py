@@ -32,7 +32,7 @@ class SinRedirecciones(HTTPRedirectHandler):
 
 
 def destino_global():
-    destino = settings.RANKING_URL.rstrip("/")
+    destino = getattr(settings, "RANKING_URL", "").rstrip("/")
     try:
         url = urlsplit(destino)
         if url.scheme != "https" or not url.hostname or url.username is not None or url.path or url.query or url.fragment:
@@ -72,7 +72,7 @@ def peticion_global(destino, recurso, *, token=None, datos=None):
 
 def consultar_global(lunes, usuario):
     destino = destino_global()
-    token = mapa_credenciales(settings.RANKING_CREDENCIALES_LOCALES).get(usuario)
+    token = mapa_credenciales(getattr(settings, "RANKING_CREDENCIALES_LOCALES", "{}")).get(usuario)
     consulta = urlencode({"semana": lunes.isoformat()})
     recurso = f"semanal/?{consulta}"
     try:

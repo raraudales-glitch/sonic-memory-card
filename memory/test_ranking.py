@@ -34,6 +34,7 @@ def partida_reportada(puntaje, fin, **campos):
     }
 
 
+@override_settings(SECURE_SSL_REDIRECT=False)
 class RankingServidorTests(TestCase):
     def setUp(self):
         self.usuarios = {
@@ -118,6 +119,13 @@ class RankingServidorTests(TestCase):
         self.assertTrue(respuesta.url.startswith(reverse("login")))
 
 
+@override_settings(
+    SECURE_SSL_REDIRECT=False,
+    RANKING_CENTRAL=False,
+    RANKING_URL="",
+    RANKING_CREDENCIALES_LOCALES="{}",
+    RANKING_CREDENCIALES_CENTRALES="{}",
+)
 class RankingGlobalTests(TestCase):
     def setUp(self):
         self.token = token_urlsafe(32)
@@ -178,6 +186,9 @@ class RankingGlobalTests(TestCase):
             RANKING_CENTRAL=True, ROOT_URLCONF="config.ranking_urls", RANKING_CREDENCIALES_CENTRALES=claves,
         ), patch("memory.ranking.timezone.now", return_value=ACTUAL):
             datos = partida_reportada(900, PASADA)
+            with override_settings(SECURE_SSL_REDIRECT=True, SECURE_REDIRECT_EXEMPT=[]):
+                respuesta_http = Client().post(API + "resultados/", datos, content_type="application/json")
+                self.assertEqual(respuesta_http.status_code, 301)
             self.assertEqual(self.enviar(datos, self.token, secure=False).status_code, 403)
             self.assertEqual(self.enviar(datos, token_urlsafe(32)).status_code, 401)
             self.assertEqual(self.enviar(datos, self.token).status_code, 201)
@@ -257,7 +268,8 @@ class RankingGlobalTests(TestCase):
                 self.assertEqual(peticion.call_args.kwargs["datos"]["partida_id"], str(oficial.pk))
                 self.assertEqual(EnvioRanking.objects.get().partida, oficial)
 
-    @override_settings(RANKING_URL="http://ranking.test")
     def test_cliente_rechaza_destinos_sin_https(self):
-        with self.assertRaises(RankingNoDisponible):
-            destino_global()
+        for direccion in ("", "http://ranking.test"):
+            with self.subTest(direccion=direccion), override_settings(RANKING_URL=direccion):
+                with self.assertRaises(RankingNoDisponible):
+                    destino_global()

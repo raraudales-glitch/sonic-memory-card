@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError, close_old_connections, connection, transaction
-from django.test import Client, TestCase, TransactionTestCase
+from django.test import Client, TestCase, TransactionTestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -45,6 +45,7 @@ def orden_por_parejas(partida):
     return sorted(range(len(orden)), key=orden.__getitem__)
 
 
+@override_settings(SECURE_SSL_REDIRECT=False)
 class AuditoriaPartidasTests(TestCase):
     @classmethod
     def setUpTestData(cls):
@@ -286,6 +287,7 @@ class AuditoriaPartidasTests(TestCase):
         self.assertEqual(oficial.puntaje, 1)
 
 
+@override_settings(SECURE_SSL_REDIRECT=False)
 class AuditoriaConcurrenciaTests(TransactionTestCase):
     def test_dos_solicitudes_simultaneas_para_el_ultimo_volteo(self):
         if not connection.features.has_select_for_update:

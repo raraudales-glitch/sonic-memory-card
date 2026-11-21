@@ -176,33 +176,26 @@ El botón **🏆 TOP 5** del menú y del tablero consulta las victorias oficiale
 
 La clasificación opcional entre instalaciones independientes está en `/top-sincronizado/`. Esa página consulta el servicio central configurado y muestra un aviso si no responde. La semana va de lunes a domingo en `America/Tegucigalpa`. Cuenta el momento de finalización de cada victoria oficial. La clasificación ordena por puntos acumulados, luego por victorias y finalmente por quién alcanzó antes su total. Si los tres criterios coinciden, se ordena por nombre de usuario. Las semanas con resultados quedan disponibles en el historial.
 
-#### Desplegar el servicio central
+#### Actualizar el servidor compartido de Oracle
 
-1. Prepara un servidor con Docker Compose, un dominio real que apunte al servidor y puertos públicos 80 y 443 para Caddy. Usa una instalación y una base PostgreSQL separadas de las instalaciones de juego. Usa un proyecto Compose distinto, como `sonic-ranking-central`, para aislar sus volúmenes.
-2. En el `.env` privado de ese servidor, configura las credenciales de PostgreSQL y `DJANGO_SECRET_KEY` como en la instalación local. En `RANKING_HOSTS`, escribe el dominio real, sin `https://` ni rutas. La configuración central habilita la API de clasificación, desactiva el modo depuración y usa Caddy para obtener el certificado TLS. Publica solo el proxy. Django confía en `X-Forwarded-Proto` del proxy y su puerto interno debe permanecer sin publicar.
-3. Emite un token aleatorio distinto para cada cuenta e instalación con un generador criptográfico, como `secrets.token_urlsafe(32)`. Entrega el token en privado y guarda en el servidor central solo su resumen SHA-256 hexadecimal. Configura `RANKING_CREDENCIALES_CENTRALES` como un objeto JSON que asocia cada resumen con un nombre global. Si la misma persona juega en más de una instalación, vincula sus tokens al mismo nombre global, con la misma ortografía y mayúsculas. Dos personas con el mismo nombre local deben recibir identidades globales distintas. Después de cambiar esta configuración, vuelve a crear el contenedor web para cargarla.
-4. Construye el servicio, aplica las migraciones y ponlo en marcha:
+El TOP 5 del servidor usa las tablas existentes de partidas y usuarios. Esta corrección no requiere cambios de esquema, variables del ranking, otro PostgreSQL ni otro proxy.
 
-```powershell
-docker compose -p sonic-ranking-central -f docker-compose.yml -f docker-compose.ranking-central.yml build web
-docker compose -p sonic-ranking-central -f docker-compose.yml -f docker-compose.ranking-central.yml run --rm web python manage.py migrate
-docker compose -p sonic-ranking-central -f docker-compose.yml -f docker-compose.ranking-central.yml up -d
+Actualiza solo los archivos de este cambio. Conserva el `.env`, `config/settings.py`, el Caddyfile y el Compose de producción. Desde el directorio de despliegue, usa el mismo proyecto y los mismos archivos Compose que ya utilizas en Oracle:
+
+```bash
+docker compose build web
+docker compose run --rm --no-deps -e DJANGO_DEBUG=False web python manage.py check
+docker compose run --rm --no-deps -e DJANGO_DEBUG=False web python manage.py test memory
+docker compose up -d --no-deps web
 ```
 
-Comprueba por HTTPS que `/api/ranking/semanal/` responde con la semana y el tablero. El servidor central no requiere cargar personajes ni crear usuarios de juego. La consulta pública muestra los nombres y resultados del TOP 5. La credencial asociada permite consultar además la posición individual.
+Django ejecuta las pruebas en una base de prueba. Si informa que esa base ya existe, cancela la ejecución y configura un nombre de prueba libre. La suite aísla la redirección HTTPS en sus clientes de prueba y comprueba explícitamente la redirección y la protección HTTPS de la API. En el servidor, comprueba `/top-semanal/` desde la sesión de un jugador.
 
-#### Conectar una instalación de juego
+#### Configuración opcional entre instalaciones independientes
 
-1. En el `.env` local, deja `RANKING_CENTRAL=0`. Pon en `RANKING_URL` el origen HTTPS real del servidor central, sin rutas. Configura `RANKING_CREDENCIALES_LOCALES` como un objeto JSON que asocie el nombre de usuario local exacto con el token privado entregado para esa cuenta. Mantén el archivo fuera de Git.
-2. Construye la aplicación, migra y arranca el sincronizador:
+Solo un despliegue que necesite recibir resultados de otras instalaciones debe habilitar `RANKING_CENTRAL=True` en sus ajustes de Django y usar `config.ranking_urls` como `ROOT_URLCONF`. Configura HTTPS detrás de su proxy de confianza y define `RANKING_CREDENCIALES_CENTRALES` como un objeto JSON con el SHA-256 hexadecimal de cada token como clave y el nombre global como valor. Entrega un token aleatorio distinto por cuenta e instalación de forma privada. Las copias de la misma cuenta se vinculan al mismo nombre global. Los valores se leen desde la configuración privada del despliegue.
 
-```powershell
-docker compose up -d --build
-docker compose exec web python manage.py migrate
-docker compose --profile ranking up -d --build
-```
-
-El sincronizador envía victorias oficiales guardadas de las cuentas vinculadas, incluidas las anteriores, a su semana original. Si la conexión falla, los resultados pendientes se conservan localmente y vuelven a intentarse. Para ejecutar un envío puntual, usa `docker compose exec web python manage.py sincronizar_ranking`. Si no hay servidor configurado o no responde, aparece un aviso y se puede seguir jugando. La pantalla nunca sustituye un tablero global por puntos locales.
+Una instalación que envíe resultados configura `RANKING_URL` con el origen HTTPS del servicio central y `RANKING_CREDENCIALES_LOCALES` con un objeto JSON que asocia cada nombre local exacto con su token. Puede ejecutar `python manage.py sincronizar_ranking` de forma puntual o con `--continuo` en un proceso separado. Sin estos ajustes, el ranking federado permanece desactivado y el TOP 5 del servidor sigue disponible.
 
 #### Qué verifica el sistema
 

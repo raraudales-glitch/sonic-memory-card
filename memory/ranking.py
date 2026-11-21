@@ -39,7 +39,7 @@ def semana_solicitada(valor):
 
 
 def acceso_central(request, *, obligatorio=False):
-    if not settings.RANKING_CENTRAL:
+    if not getattr(settings, "RANKING_CENTRAL", False):
         return None, JsonResponse({"error": "Servicio central deshabilitado"}, status=404)
     if not request.is_secure():
         return None, JsonResponse({"error": "Se requiere HTTPS"}, status=403)
@@ -50,7 +50,7 @@ def acceso_central(request, *, obligatorio=False):
     if esquema != "Bearer" or not token_valido(token):
         return None, JsonResponse({"error": "Credencial inválida"}, status=401)
     try:
-        credenciales = mapa_credenciales(settings.RANKING_CREDENCIALES_CENTRALES)
+        credenciales = mapa_credenciales(getattr(settings, "RANKING_CREDENCIALES_CENTRALES", "{}"))
     except RankingNoDisponible:
         return None, JsonResponse({"error": "Configuración no disponible"}, status=503)
     digest = hashlib.sha256(token.encode("ascii")).hexdigest()
