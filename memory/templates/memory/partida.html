@@ -110,6 +110,9 @@
             object-fit: contain;
             background: #080c19;
         }
+        .tablero.vista-previa .carta-personaje { transform: none; }
+        .tablero.vista-previa .carta-cara:not(.carta-personaje),
+        .tablero.vista-previa .numero-carta { visibility: hidden; }
         @media (hover: hover) and (pointer: fine) {
             .carta:not([aria-disabled="true"]):hover { box-shadow: 0 0 12px #77c8ff; }
         }
@@ -217,8 +220,9 @@
         <button type="button" id="reintentar-jugada" hidden>Reintentar conexi?n</button>
     </main>
 
+    {% if mostrar_previa %}{{ imagenes_previa|json_script:"imagenes-previa" }}{% endif %}
     <script defer src="{% static 'memory/js/efectos_y_frases.js' %}?v=2"></script>
-    <script defer src="{% static 'memory/js/tablero.js' %}?v=1"></script>
+    <script defer src="{% static 'memory/js/tablero.js' %}?v=2"></script>
     <script defer src="{% static 'memory/js/estado_y_audio.js' %}?v=14"></script>
     <script defer src="{% static 'memory/js/menu_opciones.js' %}?v=6"></script>
 </body>

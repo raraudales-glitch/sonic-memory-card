@@ -66,8 +66,9 @@ class AuditoriaPartidasTests(TestCase):
         self.assertNotIn("orden", estado)
         self.assertNotIn("semilla", estado)
         self.assertEqual((estado["visibles"], estado["emparejadas"]), ([], []))
-        self.assertFalse(self.client.post(ruta("vista_previa", partida)).json()["activa"])
-        self.assertEqual(self.client.get(ruta("carta_vista_previa", partida, 0)).status_code, 403)
+        self.assertNotContains(pagina, 'id="imagenes-previa"')
+        previa = self.client.post(ruta("vista_previa", partida)).json()
+        self.assertEqual((previa["activa"], previa["restante_ms"], previa["cartas"]), (False, 0, []))
         respuesta = girar(self.client, partida, 0, 1).json()
         self.assertEqual(respuesta["carta"]["clave"], orden[0])
         estado = self.client.get(ruta("estado_partida", partida)).json()
@@ -77,35 +78,43 @@ class AuditoriaPartidasTests(TestCase):
         for dificultad in ("FACIL", "NORMAL"):
             with self.subTest(dificultad=dificultad):
                 partida = crear(self.client, dificultad)
-                carta = ruta("carta_vista_previa", partida, 0)
-                self.assertEqual(self.client.get(carta).status_code, 403)
                 inicio = ruta("vista_previa", partida)
                 self.assertEqual(self.client.get(inicio).status_code, 405)
                 partida.refresh_from_db()
                 self.assertNotIn("vista_previa_inicio", partida.estado_juego)
                 ahora = timezone.now()
+                duracion = NIVELES[dificultad]["vista_previa"]
                 with patch("memory.services.timezone.now", return_value=ahora):
                     self.assertTrue(self.client.post(inicio).json()["activa"])
-                    self.assertEqual(self.client.get(carta).status_code, 200)
+                    self.assertEqual(self.client.post(inicio).json()["cartas"], [])
                     self.assertEqual(girar(self.client, partida, 0, 1).status_code, 409)
-                luego = ahora + timedelta(seconds=NIVELES[dificultad]["vista_previa"] + 1)
+                casi = ahora + timedelta(seconds=duracion, milliseconds=-10)
+                with patch("memory.services.timezone.now", return_value=casi):
+                    self.assertEqual(girar(self.client, partida, 0, 1).status_code, 409)
+                luego = ahora + timedelta(seconds=duracion)
                 with patch("memory.services.timezone.now", return_value=luego):
-                    self.assertFalse(self.client.post(inicio).json()["activa"])
-                    self.assertEqual(self.client.get(carta).status_code, 403)
+                    previa = self.client.post(inicio).json()
+                    self.assertEqual((previa["activa"], previa["cartas"]), (False, []))
+                    estado = self.client.get(ruta("estado_api", partida)).json()
+                    self.assertEqual((estado["visibles"], estado["emparejadas"], estado["espera_ms"]), ([], [], 0))
+                    self.assertNotIn("cartas", estado)
                     self.assertEqual(girar(self.client, partida, 0, 1).status_code, 200)
 
-    def test_vista_previa_no_permite_recorrer_el_tablero(self):
-        for dificultad in ("FACIL", "NORMAL"):
+    def test_vista_previa_entrega_todo_el_tablero_en_un_lote(self):
+        for dificultad, total, milisegundos in (("FACIL", 16, 3000), ("NORMAL", 20, 1500)):
             with self.subTest(dificultad=dificultad):
                 partida = crear(self.client, dificultad)
-                previa = self.client.post(ruta("vista_previa", partida)).json()
-                muestra = {carta["posicion"] for carta in previa["cartas"]}
-                self.assertEqual(len(muestra), 4)
-                self.assertNotIn("orden", previa)
+                pagina = self.client.get(ruta("jugar_partida", partida))
+                self.assertContains(pagina, 'id="imagenes-previa"')
+                self.assertNotContains(pagina, '"posicion":')
+                respuesta = self.client.post(ruta("vista_previa", partida))
+                previa = respuesta.json()
+                self.assertIn("no-store", respuesta.headers["Cache-Control"])
+                self.assertEqual(previa["restante_ms"], milisegundos)
+                self.assertEqual(previa["cantidad_cartas"], total)
+                self.assertEqual([c["posicion"] for c in previa["cartas"]], list(range(total)))
+                self.assertEqual([c["clave"] for c in previa["cartas"]], partida.estado_juego["orden"])
                 self.assertNotIn("semilla", previa)
-                for posicion in range(previa["cantidad_cartas"]):
-                    respuesta = self.client.get(ruta("carta_vista_previa", partida, posicion))
-                    self.assertEqual(respuesta.status_code, 200 if posicion in muestra else 403)
                 estado = self.client.get(ruta("estado_api", partida)).json()
                 self.assertGreater(estado["espera_ms"], 0)
                 self.assertEqual(estado["visibles"], [])
@@ -201,9 +210,8 @@ class AuditoriaPartidasTests(TestCase):
         partida = crear(self.client)
         ajeno = Client()
         ajeno.force_login(self.otro)
-        for nombre, args in (("jugar_partida", ()), ("estado_partida", ()),
-                             ("carta_vista_previa", (0,))):
-            self.assertEqual(ajeno.get(ruta(nombre, partida, *args)).status_code, 404)
+        for nombre in ("jugar_partida", "estado_partida"):
+            self.assertEqual(ajeno.get(ruta(nombre, partida)).status_code, 404)
         self.assertEqual(ajeno.post(ruta("vista_previa", partida)).status_code, 404)
         self.assertEqual(ajeno.post(ruta("estado_partida", partida)).status_code, 404)
         self.assertEqual(girar(ajeno, partida, 0, 1).status_code, 404)

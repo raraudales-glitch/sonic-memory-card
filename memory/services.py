@@ -103,6 +103,19 @@ def datos_carta(posicion, clave, catalogo):
     return {"posicion": posicion, "clave": personaje.clave, "nombre": personaje.nombre, "imagen": personaje.imagen}
 
 
+def puede_iniciar_previa(partida, ahora):
+    duracion = obtener_nivel(partida.dificultad)["vista_previa"]
+    transcurrido = (ahora - partida.inicio_servidor).total_seconds()
+    return (
+        duracion > 0
+        and partida.estado == Partida.Estado.EN_CURSO
+        and partida.movimientos == 0
+        and partida.estado_juego.get("orden")
+        and "vista_previa_inicio" not in partida.estado_juego
+        and transcurrido + duracion <= partida.limite_segundos
+    )
+
+
 def segundos_previa_restantes(partida, ahora):
     marca = partida.estado_juego.get("vista_previa_inicio")
     if partida.estado != Partida.Estado.EN_CURSO or not marca or partida.movimientos:

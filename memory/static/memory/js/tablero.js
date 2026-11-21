@@ -229,21 +229,62 @@
         if (!document.hidden) sincronizar();
     });
 
+    async function decodificarPrevia(imagenes, ms) {
+        let limite;
+        try {
+            await Promise.race([
+                Promise.all(imagenes.map(imagen => imagen.decode())),
+                new Promise((_, rechazar) => {
+                    limite = setTimeout(() => rechazar(new Error("Imágenes de vista previa pendientes")), ms);
+                }),
+            ]);
+        } finally {
+            clearTimeout(limite);
+        }
+    }
+
+    async function mostrarPrevia() {
+        const rutas = JSON.parse(document.getElementById("imagenes-previa").textContent);
+        mensaje.textContent = "Preparando vista previa…";
+        const precarga = rutas.map(ruta => {
+            const imagen = new Image();
+            imagen.src = rutaImagen(ruta);
+            return imagen;
+        });
+        await decodificarPrevia(precarga, 30000);
+
+        const solicitud = performance.now();
+        const datos = await enviar(dataset.previaUrl);
+        if (!datos.activa) return;
+        if (datos.cartas.length !== cartas.length) throw new Error("Vista previa incompleta");
+
+        const caras = datos.cartas.map(info => {
+            const imagen = cartas[info.posicion].querySelector(".carta-personaje");
+            imagen.src = rutaImagen(info.imagen);
+            return imagen;
+        });
+        const disponible = datos.restante_ms - (performance.now() - solicitud);
+        if (disponible <= 0) return;
+        await decodificarPrevia(caras, disponible);
+        if (performance.now() - solicitud >= datos.restante_ms) return;
+
+        mensaje.textContent = "¡Memoriza las cartas descubiertas!";
+        tablero.classList.add("vista-previa");
+        await new Promise(resolve => setTimeout(resolve, datos.restante_ms));
+        tablero.classList.remove("vista-previa");
+        mensaje.textContent = "";
+        liberar();
+    }
+
     async function iniciar() {
         if (dataset.previa === "true") {
             try {
-                const datos = await enviar(dataset.previaUrl);
-                if (datos.activa) {
-                    mensaje.textContent = "¡Memoriza las cartas descubiertas!";
-                    for (const info of datos.cartas) pintar(cartas[info.posicion], info);
-                    await new Promise(resolve => setTimeout(resolve, datos.restante_ms));
-                    for (const info of datos.cartas) pintar(cartas[info.posicion]);
-                }
+                await mostrarPrevia();
             } catch {
                 mensaje.textContent = "Vista previa no disponible.";
             }
         }
-        fase = "recuperando";
+        if (fase === "inicio") fase = "recuperando";
         await sincronizar();
         setInterval(() => {
             if (!document.hidden) sincronizar();

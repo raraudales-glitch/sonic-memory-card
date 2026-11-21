@@ -17,7 +17,8 @@ from .services import (
     consultar_partida,
     crear_partida,
     obtener_nivel,
-    segundos_previa_restantes,
+    datos_carta,
+    puede_iniciar_previa,
     voltear_carta,
 )
 
@@ -120,6 +121,14 @@ def jugar_partida(request, partida_id):
         "DIFICIL": "memory/images/tapa/The_Master.png",
     }
 
+    mostrar_previa = puede_iniciar_previa(partida, timezone.now())
+    imagenes_previa = []
+    if mostrar_previa:
+        imagenes_previa = list(
+            Personaje.objects.filter(clave__in=set(partida.estado_juego["orden"]))
+            .order_by("imagen").values_list("imagen", flat=True).distinct()
+        )
+
     return render(
         request,
         "memory/partida.html",
@@ -129,13 +138,11 @@ def jugar_partida(request, partida_id):
             "posiciones": range(
                 nivel["filas"] * nivel["columnas"]
             ),
-            "mostrar_previa": nivel["vista_previa"] > 0 and partida.movimientos == 0,
+            "mostrar_previa": mostrar_previa,
+            "imagenes_previa": imagenes_previa,
             "imagen_tapa": tapas[partida.dificultad],
         }
     )
-
-
-CARTAS_PREVIA = 4
 
 
 @login_required
@@ -144,115 +151,25 @@ CARTAS_PREVIA = 4
 @transaction.atomic
 def vista_previa(request, partida_id):
     partida = get_object_or_404(
-        Partida.objects.select_for_update(),
-        id=partida_id,
-        usuario=request.user
+        Partida.objects.select_for_update(), id=partida_id, usuario=request.user
     )
+    if not puede_iniciar_previa(partida, timezone.now()):
+        return JsonResponse({"ok": True, "activa": False, "restante_ms": 0, "cartas": []})
 
-    nivel = obtener_nivel(partida.dificultad)
+    orden = partida.estado_juego["orden"]
+    catalogo = Personaje.objects.in_bulk(set(orden), field_name="clave")
     ahora = timezone.now()
+    if len(catalogo) != len(set(orden)) or not puede_iniciar_previa(partida, ahora):
+        return JsonResponse({"ok": True, "activa": False, "restante_ms": 0, "cartas": []})
 
-    transcurrido = (
-        ahora - partida.inicio_servidor
-    ).total_seconds()
-
-    estado_juego = dict(partida.estado_juego)
-
-    if (
-        partida.estado == Partida.Estado.EN_CURSO
-        and nivel["vista_previa"] > 0
-        and transcurrido < partida.limite_segundos
-        and partida.movimientos == 0
-        and not estado_juego.get("vista_previa_inicio")
-    ):
-        estado_juego["vista_previa_inicio"] = (
-            ahora.timestamp()
-        )
-
-        partida.estado_juego = estado_juego
-
-        partida.save(
-            update_fields=["estado_juego"]
-        )
-
-    restante = segundos_previa_restantes(partida, ahora)
-    orden = estado_juego["orden"][:CARTAS_PREVIA] if restante > 0 else []
-    catalogo = Personaje.objects.filter(activo=True).in_bulk(orden, field_name="clave")
-    restante = segundos_previa_restantes(partida, timezone.now())
-    cartas = [
-        {"posicion": posicion, "nombre": catalogo[clave].nombre, "imagen": catalogo[clave].imagen}
-        for posicion, clave in enumerate(orden) if restante > 0 and clave in catalogo
-    ]
-
+    partida.estado_juego["vista_previa_inicio"] = ahora.timestamp()
+    partida.save(update_fields=["estado_juego"])
     return JsonResponse({
         "ok": True,
-        "activa": restante > 0,
-        "restante_ms": int(restante * 1000),
-        "cartas": cartas,
-        "cantidad_cartas": (
-            nivel["filas"] * nivel["columnas"]
-        ),
-    })
-
-
-@login_required
-@require_GET
-@never_cache
-def carta_vista_previa(request, partida_id, posicion):
-    partida = get_object_or_404(
-        Partida,
-        id=partida_id,
-        usuario=request.user
-    )
-
-    if segundos_previa_restantes(
-        partida,
-        timezone.now()
-    ) <= 0:
-        return JsonResponse(
-            {
-                "ok": False,
-                "error": "Vista previa terminada"
-            },
-            status=403
-        )
-
-    orden = partida.estado_juego.get(
-        "orden",
-        []
-    )
-
-    if not 0 <= posicion < len(orden):
-        return JsonResponse(
-            {
-                "ok": False,
-                "error": "Posición inválida"
-            },
-            status=400
-        )
-
-    if posicion >= CARTAS_PREVIA:
-        return JsonResponse({"ok": False, "error": "Carta fuera de la vista previa"}, status=403)
-
-    personaje = Personaje.objects.filter(
-        clave=orden[posicion],
-        activo=True
-    ).first()
-
-    if personaje is None:
-        return JsonResponse(
-            {
-                "ok": False,
-                "error": "Personaje no encontrado"
-            },
-            status=404
-        )
-
-    return JsonResponse({
-        "ok": True,
-        "posicion": posicion,
-        "nombre": personaje.nombre,
-        "imagen": personaje.imagen,
+        "activa": True,
+        "restante_ms": int(obtener_nivel(partida.dificultad)["vista_previa"] * 1000),
+        "cartas": [datos_carta(posicion, clave, catalogo) for posicion, clave in enumerate(orden)],
+        "cantidad_cartas": len(orden),
     })
 
 

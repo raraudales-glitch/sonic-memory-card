@@ -112,6 +112,66 @@ class TableroTactilTests(StaticLiveServerTestCase):
                     self.assertEqual(self.cantidad(".carta.volteada"), 1)
                     self.assertEqual(Movimiento.objects.filter(partida=partida).count(), 1)
 
+    def test_vista_previa_simultanea_y_con_duracion_por_nivel(self):
+        self.cdp("Page.enable")
+        self.cdp("Page.addScriptToEvaluateOnNewDocument", source="""
+            window.fasesPrevia = [];
+            const decode = HTMLImageElement.prototype.decode;
+            let primeraPrecarga = true;
+            HTMLImageElement.prototype.decode = function () {
+                const lista = decode.call(this);
+                if (this.isConnected || !primeraPrecarga) return lista;
+                primeraPrecarga = false;
+                return lista.then(() => new Promise(resolve => setTimeout(() => {
+                    window.precargaCompleta = performance.now();
+                    resolve();
+                }, 300)));
+            };
+            new MutationObserver(cambios => {
+                for (const cambio of cambios) {
+                    const tablero = cambio.target;
+                    if (!tablero.classList?.contains('tablero') || cambio.attributeName !== 'class') continue;
+                    const cartas = [...tablero.querySelectorAll('.carta')];
+                    fasesPrevia.push({
+                        instante: performance.now(),
+                        visibles: cartas.filter(carta => {
+                            const imagen = carta.querySelector('.carta-personaje');
+                            return imagen.naturalWidth > 0 && getComputedStyle(imagen).transform === 'none';
+                        }).length,
+                        tapasVisibles: cartas.filter(carta => {
+                            const tapa = carta.querySelector('.carta-cara:not(.carta-personaje)');
+                            return getComputedStyle(tapa).visibility === 'visible';
+                        }).length,
+                        habilitadas: cartas.filter(carta => carta.getAttribute('aria-disabled') === 'false').length,
+                    });
+                }
+            }).observe(document, {attributes: true, subtree: true});
+        """)
+        self.cdp("Emulation.setDeviceMetricsOverride", mobile=True, width=390, height=800, deviceScaleFactor=2)
+        for dificultad, total, duracion in (("FACIL", 16, 3000), ("NORMAL", 20, 1500), ("DIFICIL", 36, 0)):
+            with self.subTest(dificultad=dificultad):
+                partida = crear(self.client, dificultad)
+                url = self.live_server_url + ruta("jugar_partida", partida)
+                self.cdp("Page.navigate", url=url)
+                self.esperar(lambda: self.js(f"location.href === {json.dumps(url)} && !!document.querySelector('.tablero')"))
+                self.assertIsNotNone(self.js("window.fasesPrevia"))
+                if duracion:
+                    self.esperar(lambda: self.js("fasesPrevia.length === 1"))
+                    self.tocar(0)
+                self.esperar(lambda: self.cantidad(".carta[aria-disabled=false]") == total)
+                fases = self.js("fasesPrevia")
+                consultas = self.js("performance.getEntriesByType('resource').filter(r => r.name.includes('/vista-previa/')).length")
+                self.assertEqual(consultas, int(bool(duracion)))
+                if duracion:
+                    self.assertEqual([fase["visibles"] for fase in fases], [total, 0])
+                    self.assertEqual([fase["tapasVisibles"] for fase in fases], [0, total])
+                    self.assertEqual([fase["habilitadas"] for fase in fases], [0, total])
+                    self.assertGreaterEqual(fases[0]["instante"], self.js("precargaCompleta"))
+                    self.assertAlmostEqual(fases[1]["instante"] - fases[0]["instante"], duracion, delta=120)
+                else:
+                    self.assertEqual(fases, [])
+                self.assertFalse(Movimiento.objects.filter(partida=partida).exists())
+
     def test_toques_rapidos_timeout_y_reintento_idempotente(self):
         partida = crear(self.client, "DIFICIL")
         orden = partida.estado_juego["orden"]
