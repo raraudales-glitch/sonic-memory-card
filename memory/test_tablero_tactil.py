@@ -71,15 +71,16 @@ class TableroTactilTests(StaticLiveServerTestCase):
             sleep(0.05)
         self.fail("La condición no se cumplió a tiempo")
 
-    def abrir(self, partida, ancho):
-        self.cdp("Emulation.setDeviceMetricsOverride", mobile=True, width=ancho, height=800, deviceScaleFactor=2)
+    def abrir(self, partida, ancho, *, movil=True):
+        self.cdp("Emulation.setTouchEmulationEnabled", enabled=movil)
+        self.cdp("Emulation.setDeviceMetricsOverride", mobile=movil, width=ancho, height=800, deviceScaleFactor=2)
         url = self.live_server_url + ruta("jugar_partida", partida)
         self.cdp("Page.navigate", url=url)
         self.esperar(lambda: self.js(
             f"location.href === {json.dumps(url)} && !!document.querySelector('.carta[aria-disabled=false]')"
         ))
 
-    def tocar(self, posicion):
+    def tocar(self, posicion, *, tactil=True):
         selector = f".carta[data-posicion='{posicion}']"
         x, y = self.js(f"""(() => {{
             const carta = document.querySelector("{selector}");
@@ -87,8 +88,34 @@ class TableroTactilTests(StaticLiveServerTestCase):
             const rect = carta.getBoundingClientRect();
             return [rect.x + rect.width / 2, rect.y + rect.height / 2];
         }})()""")
-        self.cdp("Input.dispatchTouchEvent", type="touchStart", touchPoints=[{"x": x, "y": y}])
-        self.cdp("Input.dispatchTouchEvent", type="touchEnd", touchPoints=[])
+        if tactil:
+            self.cdp("Input.dispatchTouchEvent", type="touchStart", touchPoints=[{"x": x, "y": y}])
+            self.cdp("Input.dispatchTouchEvent", type="touchEnd", touchPoints=[])
+        else:
+            for tipo in ("mousePressed", "mouseReleased"):
+                self.cdp("Input.dispatchMouseEvent", type=tipo, x=x, y=y, button="left", clickCount=1)
+
+    def comprobar_giro_jugada(self, *, tactil, animado):
+        self.js("""(() => {
+            window.giroDeJugada = {};
+            const giro = document.querySelector('.carta-giro');
+            giro.addEventListener('transitionstart', () => {
+                setTimeout(() => {
+                    giroDeJugada.intermedio = new DOMMatrix(getComputedStyle(giro).transform).m11;
+                }, 100);
+            }, {once: true});
+            giro.addEventListener('transitionend', evento => {
+                giroDeJugada.duracion = evento.elapsedTime;
+            }, {once: true});
+        })()""")
+        self.tocar(0, tactil=tactil)
+        self.esperar(lambda: self.cantidad(".carta.volteada") == 1)
+        if animado:
+            self.esperar(lambda: self.js("giroDeJugada.duracion === 0.3"))
+            self.assertLess(abs(self.js("giroDeJugada.intermedio")), 0.98)
+        else:
+            self.assertEqual(self.js("document.querySelector('.carta-giro').getAnimations().length"), 0)
+            self.assertEqual(self.js("giroDeJugada"), {})
 
     def cantidad(self, selector):
         return self.js(f"document.querySelectorAll({json.dumps(selector)}).length")
@@ -173,6 +200,7 @@ class TableroTactilTests(StaticLiveServerTestCase):
             }).observe(document, {attributes: true, subtree: true});
         """)
         for ancho in (390, 1200):
+            self.cdp("Emulation.setTouchEmulationEnabled", enabled=ancho == 390)
             self.cdp("Emulation.setDeviceMetricsOverride", mobile=ancho == 390, width=ancho, height=800, deviceScaleFactor=2)
             for dificultad, total, duracion in (("FACIL", 16, 3000), ("NORMAL", 20, 1500), ("DIFICIL", 36, 0)):
                 with self.subTest(ancho=ancho, dificultad=dificultad):
@@ -222,6 +250,39 @@ class TableroTactilTests(StaticLiveServerTestCase):
                         .every(giro => getComputedStyle(giro).transform === 'none')"""))
                     self.assertEqual(self.cantidad(".carta-personaje[src]"), 0)
                     self.assertFalse(Movimiento.objects.filter(partida=partida).exists())
+                    self.assertTrue(self.js("document.querySelector('#preferencia-giros').offsetParent === null"))
+                    self.comprobar_giro_jugada(tactil=ancho == 390, animado=True)
+                    self.assertEqual(Movimiento.objects.filter(partida=partida).count(), 1)
+
+    def test_movimiento_reducido_y_activacion_explicita_de_giros(self):
+        self.cdp("Emulation.setEmulatedMedia", features=[{"name": "prefers-reduced-motion", "value": "reduce"}])
+        self.cdp("Page.enable")
+        self.cdp("Page.addScriptToEvaluateOnNewDocument", source="""
+            window.fotogramasPrevia = [];
+            const animate = Element.prototype.animate;
+            Element.prototype.animate = function (...args) {
+                const animacion = animate.apply(this, args);
+                if (this.matches('.animando-previa .carta-giro')) {
+                    fotogramasPrevia.push(animacion.effect.getKeyframes().map(fotograma => fotograma.transform));
+                }
+                return animacion;
+            };
+        """)
+        for activados in (False, True, False):
+            with self.subTest(activados=activados):
+                partida = crear(self.client, "NORMAL")
+                self.abrir(partida, 1200, movil=False)
+                self.assertTrue(self.js("matchMedia('(prefers-reduced-motion: reduce)').matches"))
+                self.assertTrue(self.js("document.querySelector('#preferencia-giros').offsetParent !== null"))
+                estado = self.js("document.querySelector('#preferencia-giros').getAttribute('aria-pressed')")
+                self.assertEqual(estado, str(activados).lower())
+                poses = ["rotateY(180deg)"] * 2
+                if activados:
+                    poses = ["rotateY(0deg)", *poses, "rotateY(0deg)"]
+                self.assertEqual(self.js("fotogramasPrevia"), [poses] * 20)
+                self.comprobar_giro_jugada(tactil=False, animado=activados)
+                self.assertEqual(Movimiento.objects.filter(partida=partida).count(), 1)
+                self.js("document.querySelector('#preferencia-giros').click()")
 
     def test_toques_rapidos_timeout_y_reintento_idempotente(self):
         partida = crear(self.client, "DIFICIL")

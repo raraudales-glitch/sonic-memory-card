@@ -229,6 +229,29 @@
         if (!document.hidden) sincronizar();
     });
 
+    const preferenciaGiros = document.getElementById("preferencia-giros");
+    const claveGiros = "sonic_giros_3d";
+    function aplicarPreferenciaGiros(activada) {
+        tablero.classList.toggle("giros-activados", activada);
+        preferenciaGiros?.setAttribute("aria-pressed", String(activada));
+    }
+
+    try {
+        aplicarPreferenciaGiros(localStorage.getItem(claveGiros) === "1");
+    } catch {
+        aplicarPreferenciaGiros(false);
+    }
+
+    preferenciaGiros?.addEventListener("click", () => {
+        const activada = !tablero.classList.contains("giros-activados");
+        aplicarPreferenciaGiros(activada);
+        try {
+            localStorage.setItem(claveGiros, activada ? "1" : "0");
+        } catch {
+            return;
+        }
+    });
+
     async function decodificarPrevia(imagenes, ms) {
         let limite;
         try {
