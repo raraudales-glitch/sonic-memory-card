@@ -111,18 +111,13 @@
             object-fit: contain;
             background: #080c19;
         }
-        .tablero.giros-activados .carta-giro { transition: transform var(--duracion-giro) ease !important; }
+        .tablero.giros-desactivados .carta-giro { transition: none; }
         .tablero.animando-previa .carta { perspective: 650px; }
         .tablero.animando-previa .numero-carta { visibility: hidden; }
         @media (hover: hover) and (pointer: fine) {
             .carta:not([aria-disabled="true"]):hover { box-shadow: 0 0 12px #77c8ff; }
         }
-        .preferencia-giros { display: none; margin-bottom: 14px; }
-        .preferencia-giros button { padding: 8px 12px; touch-action: manipulation; }
-        .preferencia-giros button[aria-pressed="true"] { background: #0969da; color: white; }
         @media (prefers-reduced-motion: reduce) {
-            .preferencia-giros { display: block; }
-            .tablero:not(.giros-activados) .carta-giro { transition: none; }
             body::before { animation: none; }
         }
         @media (pointer: coarse) {
@@ -209,10 +204,6 @@
         <p class="subtitulo">
             {% if partida.practica %}Modo práctica · {% endif %}{{ nivel.filas }} × {{ nivel.columnas }} · {{ nivel.parejas }} parejas · Derrota en el fallo {{ nivel.fallos|add:1 }}
         </p>
-        <div class="preferencia-giros">
-            <span>Tu sistema solicita reducir el movimiento.</span>
-            <button type="button" id="preferencia-giros" aria-pressed="false">Giros 3D</button>
-        </div>
         <div class="tablero columnas-{{ nivel.columnas }}">
             {% for posicion in posiciones %}
                 <button type="button" class="carta" data-posicion="{{ posicion }}"
@@ -231,8 +222,8 @@
 
     {% if mostrar_previa %}{{ imagenes_previa|json_script:"imagenes-previa" }}{% endif %}
     <script defer src="{% static 'memory/js/efectos_y_frases.js' %}?v=2"></script>
-    <script defer src="{% static 'memory/js/tablero.js' %}?v=6"></script>
     <script defer src="{% static 'memory/js/estado_y_audio.js' %}?v=14"></script>
-    <script defer src="{% static 'memory/js/menu_opciones.js' %}?v=6"></script>
+    <script defer src="{% static 'memory/js/menu_opciones.js' %}?v=8"></script>
+    <script defer src="{% static 'memory/js/tablero.js' %}?v=7"></script>
 </body>
 </html>

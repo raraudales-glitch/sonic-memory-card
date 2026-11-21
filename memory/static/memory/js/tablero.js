@@ -229,29 +229,6 @@
         if (!document.hidden) sincronizar();
     });
 
-    const preferenciaGiros = document.getElementById("preferencia-giros");
-    const claveGiros = "sonic_giros_3d";
-    function aplicarPreferenciaGiros(activada) {
-        tablero.classList.toggle("giros-activados", activada);
-        preferenciaGiros?.setAttribute("aria-pressed", String(activada));
-    }
-
-    try {
-        aplicarPreferenciaGiros(localStorage.getItem(claveGiros) === "1");
-    } catch {
-        aplicarPreferenciaGiros(false);
-    }
-
-    preferenciaGiros?.addEventListener("click", () => {
-        const activada = !tablero.classList.contains("giros-activados");
-        aplicarPreferenciaGiros(activada);
-        try {
-            localStorage.setItem(claveGiros, activada ? "1" : "0");
-        } catch {
-            return;
-        }
-    });
-
     async function decodificarPrevia(imagenes, ms) {
         let limite;
         try {
@@ -269,23 +246,34 @@
     async function animarPrevia(duracion) {
         const giros = cartas.map(carta => carta.querySelector(".carta-giro"));
         const estilo = getComputedStyle(giros[0]);
-        const tramo = Math.min(0.5, parseFloat(estilo.transitionDuration) * 1000 / duracion);
+        const tramo = Math.min(0.5, parseFloat(estilo.getPropertyValue("--duracion-giro")) * 1000 / duracion);
         const cerrada = "rotateY(0deg)";
         const abierta = "rotateY(180deg)";
-        const fotogramas = tramo > 0 ? [
+        const giros3D = [
             {transform: cerrada, offset: 0, easing: estilo.transitionTimingFunction},
             {transform: abierta, offset: tramo},
             {transform: abierta, offset: 1 - tramo, easing: estilo.transitionTimingFunction},
             {transform: cerrada, offset: 1},
-        ] : [{transform: abierta}, {transform: abierta}];
+        ];
+        const carasVisibles = [{transform: abierta}, {transform: abierta}];
+        const fotogramas = () => tablero.classList.contains("giros-desactivados") ? carasVisibles : giros3D;
 
         const inicio = document.timeline.currentTime;
         const animaciones = giros.map(giro => {
-            const animacion = giro.animate(fotogramas, {duration: duracion});
+            const animacion = giro.animate(fotogramas(), {duration: duracion});
             animacion.startTime = inicio;
             return animacion;
         });
-        await Promise.allSettled(animaciones.map(animacion => animacion.finished));
+        function actualizarPrevia() {
+            const poses = fotogramas();
+            for (const animacion of animaciones) animacion.effect.setKeyframes(poses);
+        }
+        tablero.addEventListener("cambio-giros", actualizarPrevia);
+        try {
+            await Promise.allSettled(animaciones.map(animacion => animacion.finished));
+        } finally {
+            tablero.removeEventListener("cambio-giros", actualizarPrevia);
+        }
     }
 
     async function mostrarPrevia() {

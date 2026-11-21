@@ -89,11 +89,13 @@ class TableroTactilTests(StaticLiveServerTestCase):
         ))
 
     def tocar(self, posicion, *, tactil=True):
-        selector = f".carta[data-posicion='{posicion}']"
+        self.tocar_control(f".carta[data-posicion='{posicion}']", tactil=tactil)
+
+    def tocar_control(self, selector, *, tactil):
         x, y = self.js(f"""(() => {{
-            const carta = document.querySelector("{selector}");
-            carta.scrollIntoView({{block: 'center'}});
-            const rect = carta.getBoundingClientRect();
+            const control = document.querySelector("{selector}");
+            control.scrollIntoView({{block: 'nearest'}});
+            const rect = control.getBoundingClientRect();
             return [rect.x + rect.width / 2, rect.y + rect.height / 2];
         }})()""")
         if tactil:
@@ -257,7 +259,8 @@ class TableroTactilTests(StaticLiveServerTestCase):
                         .every(giro => getComputedStyle(giro).transform === 'none')"""))
                     self.assertEqual(self.cantidad(".carta-personaje[src]"), 0)
                     self.assertFalse(Movimiento.objects.filter(partida=partida).exists())
-                    self.assertTrue(self.js("document.querySelector('#preferencia-giros').offsetParent === null"))
+                    self.assertEqual(self.cantidad(".zona-juego #preferencia-giros"), 0)
+                    self.assertNotIn("Tu sistema solicita reducir el movimiento", self.js("document.body.textContent"))
                     self.comprobar_giro_jugada(tactil=ancho == 390, animado=True)
                     self.assertEqual(Movimiento.objects.filter(partida=partida).count(), 1)
 
@@ -266,11 +269,6 @@ class TableroTactilTests(StaticLiveServerTestCase):
         self.cdp("Page.enable")
         self.cdp("Page.addScriptToEvaluateOnNewDocument", source="""
             window.fotogramasPrevia = [];
-            document.addEventListener('DOMContentLoaded', () => {
-                const estilo = document.createElement('style');
-                estilo.textContent = '@media (pointer: fine) { body .tablero .carta-giro { transition: none !important; } }';
-                document.head.append(estilo);
-            });
             const animate = Element.prototype.animate;
             Element.prototype.animate = function (...args) {
                 const animacion = animate.apply(this, args);
@@ -280,26 +278,39 @@ class TableroTactilTests(StaticLiveServerTestCase):
                 return animacion;
             };
         """)
-        for activados in (False, True, False):
-            with self.subTest(activados=activados):
-                partida = crear(self.client, "NORMAL")
-                self.abrir(partida, 1200, movil=False)
-                self.assertTrue(self.js("matchMedia('(prefers-reduced-motion: reduce)').matches"))
-                self.assertTrue(self.js("document.querySelector('#preferencia-giros').offsetParent !== null"))
-                estado = self.js("document.querySelector('#preferencia-giros').getAttribute('aria-pressed')")
-                self.assertEqual(estado, str(activados).lower())
-                self.assertTrue(self.js("matchMedia('(pointer: fine)').matches"))
-                transicion = self.js("getComputedStyle(document.querySelector('.carta-giro')).transitionDuration")
-                self.assertEqual(transicion, "0.3s" if activados else "0s")
-                recurso = self.js("performance.getEntriesByType('resource').find(r => r.name.includes('tablero.js')).name")
-                self.assertTrue(recurso.endswith("?v=6"))
-                poses = ["rotateY(180deg)"] * 2
-                if activados:
-                    poses = ["rotateY(0deg)", *poses, "rotateY(0deg)"]
-                self.assertEqual(self.js("fotogramasPrevia"), [poses] * 20)
-                self.comprobar_giro_jugada(tactil=False, animado=activados)
-                self.assertEqual(Movimiento.objects.filter(partida=partida).count(), 1)
-                self.js("document.querySelector('#preferencia-giros').click()")
+        for movil in (False, True):
+            for activados in (True, False, True):
+                with self.subTest(movil=movil, activados=activados):
+                    partida = crear(self.client, "NORMAL")
+                    self.abrir(partida, 390 if movil else 1200, movil=movil)
+                    self.assertTrue(self.js("matchMedia('(prefers-reduced-motion: reduce)').matches"))
+                    self.tocar_control("#sonic-boton-menu", tactil=movil)
+                    panel = "#sonic-panel-sonido"
+                    panel_visible = "getComputedStyle(document.querySelector('#sonic-panel-sonido')).opacity === '1'"
+                    self.esperar(lambda: self.js(panel_visible))
+                    self.assertEqual(self.cantidad(f"{panel} input[type=range]"), 2)
+                    self.assertEqual(self.js("document.querySelector('#sonic-titulo-visual').textContent"), "Visual")
+                    interruptor = "document.querySelector('#preferencia-giros')"
+                    self.assertEqual(self.js(f"{interruptor}.getAttribute('aria-checked')"), str(activados).lower())
+                    self.assertEqual(self.js(f"{interruptor}.textContent"), "Activado" if activados else "Desactivado")
+                    transicion = self.js("getComputedStyle(document.querySelector('.carta-giro')).transitionDuration")
+                    self.assertEqual(transicion, "0.3s" if activados else "0s")
+                    poses = ["rotateY(180deg)"] * 2
+                    if activados:
+                        poses = ["rotateY(0deg)", *poses, "rotateY(0deg)"]
+                    self.assertEqual(self.js("fotogramasPrevia"), [poses] * 20)
+                    self.tocar_control("#sonic-cerrar-menu", tactil=movil)
+                    self.comprobar_giro_jugada(tactil=movil, animado=activados)
+                    self.assertEqual(Movimiento.objects.filter(partida=partida).count(), 1)
+                    self.tocar_control("#sonic-boton-menu", tactil=movil)
+                    self.esperar(lambda: self.js(panel_visible))
+                    self.tocar_control("#preferencia-giros", tactil=movil)
+                    self.esperar(lambda: self.js(f"{interruptor}.getAttribute('aria-checked')") == str(not activados).lower())
+                    self.assertEqual(
+                        self.js("getComputedStyle(document.querySelector('.carta-giro')).transitionDuration"),
+                        "0s" if activados else "0.3s",
+                    )
+            self.js("localStorage.removeItem('sonic_giros_3d')")
 
     def test_toques_rapidos_timeout_y_reintento_idempotente(self):
         partida = crear(self.client, "DIFICIL")

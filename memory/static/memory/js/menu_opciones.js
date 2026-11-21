@@ -20,10 +20,23 @@
             : valorInicial;
     }
 
+    const claveGiros = "sonic_giros_3d";
+
+    function leerGiros() {
+        try {
+            return localStorage.getItem(claveGiros) !== "0";
+        } catch {
+            return true;
+        }
+    }
+
     function iniciarMenu() {
         if (document.getElementById("sonic-boton-menu")) {
             return;
         }
+
+        const tablero = document.querySelector(".tablero");
+        let girosActivados = leerGiros();
 
         const estado = {
             musica: leerVolumen(
@@ -214,6 +227,33 @@
                 font-size: 13px;
             }
 
+            .sonic-grupo-visual h2 {
+                margin: 0 0 12px;
+                color: #ffdf00;
+                font-size: 24px;
+            }
+
+            #preferencia-giros {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                min-height: 44px;
+                padding: 0 10px;
+                border: 1px solid #5485bc;
+                border-radius: 9px;
+                background: #17396a;
+                color: #fff;
+                font: inherit;
+                cursor: pointer;
+                touch-action: manipulation;
+            }
+
+            #preferencia-giros[aria-checked="true"] {
+                background: #ffdf00;
+                border-color: #ffdf00;
+                color: #081d45;
+            }
+
             .sonic-control-sonido {
                 display: flex;
                 align-items: center;
@@ -293,7 +333,7 @@
 
         boton.setAttribute(
             "aria-label",
-            "Abrir opciones de sonido"
+            "Abrir opciones"
         );
 
         boton.setAttribute("aria-expanded", "false");
@@ -315,7 +355,7 @@
 
         panel.setAttribute(
             "aria-label",
-            "Opciones de sonido"
+            "Opciones"
         );
 
         panel.setAttribute("aria-hidden", "true");
@@ -392,10 +432,19 @@
                 </div>
             </div>
 
+            <section class="sonic-grupo-visual" aria-labelledby="sonic-titulo-visual">
+                <h2 id="sonic-titulo-visual">Visual</h2>
+                <div class="sonic-etiqueta-sonido">
+                    <label id="sonic-etiqueta-giros" for="preferencia-giros">Giros 3D</label>
+                    <button type="button" id="preferencia-giros" role="switch"
+                        aria-labelledby="sonic-etiqueta-giros"></button>
+                </div>
+            </section>
+
             <p class="sonic-panel-ayuda">
                 M silencia cada canal por separado.
                 Esc abre o cierra el menú.
-                El tiempo del juego continúa mientras ajustas el sonido.
+                El tiempo del juego continúa mientras ajustas las opciones.
             </p>
         `;
 
@@ -645,8 +694,8 @@
             boton.setAttribute(
                 "aria-label",
                 abierto
-                    ? "Cerrar opciones de sonido"
-                    : "Abrir opciones de sonido"
+                    ? "Cerrar opciones"
+                    : "Abrir opciones"
             );
 
             if (abierto) {
@@ -740,6 +789,26 @@
             true
         );
 
+        const interruptorGiros = panel.querySelector("#preferencia-giros");
+
+        function actualizarGiros() {
+            interruptorGiros.setAttribute("aria-checked", String(girosActivados));
+            interruptorGiros.textContent = girosActivados ? "Activado" : "Desactivado";
+            tablero?.classList.toggle("giros-desactivados", !girosActivados);
+            tablero?.dispatchEvent(new Event("cambio-giros"));
+        }
+
+        interruptorGiros.addEventListener("click", () => {
+            girosActivados = !girosActivados;
+            actualizarGiros();
+            try {
+                localStorage.setItem(claveGiros, girosActivados ? "1" : "0");
+            } catch {
+                return;
+            }
+        });
+
+        actualizarGiros();
         actualizarSonido();
     }
 
