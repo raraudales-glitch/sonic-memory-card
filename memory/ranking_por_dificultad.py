@@ -90,6 +90,35 @@ def top_semanal_por_dificultad(request):
     ).values_list("semana", flat=True).distinct().order_by("-semana")[:16]
     anteriores = [fecha.date().isoformat() for fecha in fechas if fecha]
 
+    historico = partidas_oficiales().filter(
+        fin_servidor__gte=inicio_dt,
+        fin_servidor__lt=fin_dt,
+    ).values("usuario_id", "usuario__username").annotate(
+        puntos=Sum("puntaje"),
+        victorias=Count("pk"),
+        logrado_en=Max("fin_servidor"),
+    ).order_by("-puntos", "-victorias", "logrado_en", "usuario__username")
+
+    mejores_generales = []
+    posicion_general = None
+    for numero, fila in enumerate(historico, start=1):
+        if numero <= 5:
+            mejores_generales.append({
+                "jugador": fila["usuario__username"],
+                "puntos": fila["puntos"],
+                "victorias": fila["victorias"],
+            })
+        if fila["usuario_id"] == request.user.pk:
+            posicion_general = numero
+
+    ranking_compatible = {
+        "mejores": mejores_generales,
+        "posicion": posicion_general,
+        "vinculado": True,
+        "anteriores": anteriores,
+        "inicio": inicio.isoformat(),
+    }
+
     return render(request, "memory/top_semanal_niveles.html", {
         "niveles_ranking": NIVELES,
         "nivel": nivel,
@@ -99,6 +128,7 @@ def top_semanal_por_dificultad(request):
         "semana_param": inicio.isoformat(),
         "semana_invalida": semana_invalida,
         "mejores": mejores,
+        "ranking": ranking_compatible,
         "posicion": posicion,
         "anteriores": anteriores,
     })

@@ -33,19 +33,19 @@ class RankingPorDificultadTests(TestCase):
     def test_los_niveles_no_mezclan_los_puntos(self):
         self.crear_victoria(self.usuario, "FACIL", 1100)
         self.crear_victoria(self.usuario, "NORMAL", 2300)
-        respuesta = self.client.get(self.url, {"nivel": "FACIL"})
+        respuesta = self.client.get(self.url, {"nivel": "FACIL"}, secure=True)
         self.assertEqual(respuesta.status_code, 200)
         self.assertEqual(respuesta.context["mejores"][0]["puntos"], 1100)
-        respuesta = self.client.get(self.url, {"nivel": "NORMAL"})
+        respuesta = self.client.get(self.url, {"nivel": "NORMAL"}, secure=True)
         self.assertEqual(respuesta.context["mejores"][0]["puntos"], 2300)
-        respuesta = self.client.get(self.url, {"nivel": "DIFICIL"})
+        respuesta = self.client.get(self.url, {"nivel": "DIFICIL"}, secure=True)
         self.assertEqual(respuesta.context["mejores"], [])
 
     def test_acumula_victorias_del_mismo_nivel(self):
         self.crear_victoria(self.usuario, "FACIL", 500)
         self.crear_victoria(self.usuario, "FACIL", 600)
         self.crear_victoria(self.otro, "FACIL", 700)
-        respuesta = self.client.get(self.url, {"nivel": "FACIL"})
+        respuesta = self.client.get(self.url, {"nivel": "FACIL"}, secure=True)
         self.assertEqual(respuesta.context["mejores"][0]["puntos"], 1100)
         self.assertEqual(respuesta.context["mejores"][0]["victorias"], 2)
         self.assertEqual(respuesta.context["posicion"], 1)
@@ -53,19 +53,19 @@ class RankingPorDificultadTests(TestCase):
     def test_una_semana_no_contamina_a_otra(self):
         self.crear_victoria(self.usuario, "FACIL", 900, self.fecha - timedelta(days=7))
         self.crear_victoria(self.usuario, "FACIL", 600)
-        respuesta = self.client.get(self.url, {"nivel": "FACIL"})
+        respuesta = self.client.get(self.url, {"nivel": "FACIL"}, secure=True)
         self.assertEqual(respuesta.context["mejores"][0]["puntos"], 600)
-        respuesta = self.client.get(self.url, {"nivel": "FACIL", "semana": (self.inicio - timedelta(days=7)).isoformat()})
+        respuesta = self.client.get(self.url, {"nivel": "FACIL", "semana": (self.inicio - timedelta(days=7)).isoformat()}, secure=True)
         self.assertEqual(respuesta.context["mejores"][0]["puntos"], 900)
 
     def test_victoria_sin_puntos_no_esta_en_el_ranking(self):
         self.crear_victoria(self.usuario, "FACIL", 0)
-        respuesta = self.client.get(self.url, {"nivel": "FACIL"})
+        respuesta = self.client.get(self.url, {"nivel": "FACIL"}, secure=True)
         self.assertEqual(respuesta.context["mejores"], [])
 
     def test_la_tabla_tiene_cinco_puestos(self):
         for indice in range(7):
             usuario = get_user_model().objects.create_user(username=f"participante_{indice}")
             self.crear_victoria(usuario, "NORMAL", 1000 + indice)
-        respuesta = self.client.get(self.url, {"nivel": "NORMAL"})
+        respuesta = self.client.get(self.url, {"nivel": "NORMAL"}, secure=True)
         self.assertEqual(len(respuesta.context["mejores"]), 5)
