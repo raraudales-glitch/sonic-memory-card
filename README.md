@@ -457,20 +457,6 @@ Sonic Memory Card es un proyecto académico **no oficial** inspirado en el unive
 | 17 | Tangle the Lemur | [JCThornton — DeviantArt](https://www.deviantart.com/jcthornton/art/%2B3D-Model-Download%2B-Tangle-The-Lemur-824947605) |
 | 18 | Whisper the Wolf | [Pinterest — smilesfps](https://www.pinterest.com/pin/smilesfps-smilesfps-on-x--755056693793950877/) |
 
-**Pendientes de verificación:** el enlace indicado para Belle lleva a una página sobre **Tiara the Manx**, no identifica directamente la ilustración de Belle; y el recurso de Lanolin publicado en Newgrounds presenta restricciones de reutilización. Las páginas agregadoras como Pinterest y Fandom no constituyen por sí mismas licencias de uso. Es necesario identificar el origen y los permisos de las imágenes antes de afirmar que todas pueden redistribuirse.
-
-También se consultaron [una galería relacionada con Detexki99](https://www.deviantart.com/morelikethis/Detexki99/887111286), [Sonic Art Assets DVD](https://sonic-art-assets-dvd.fandom.com/wiki/Sonic_Rivals_2) y otras páginas de referencia registradas en `CREDITOS.md`.
-
-#### Efectos de sonido
-
-| Autor / paquete | Fuente | Observación |
-|---|---|---|
-| ROHHSA — NETCROSIS VOLUME ONE | [Payhip de ROHHSA](https://payhip.com/rohhsa) | Recursos digitales; revisar condiciones del paquete aplicado |
-| Chequered Ink — 400 Sounds Pack | [itch.io](https://ci.itch.io/400-sounds-pack) | Paquete consultado para efectos de juego |
-| JDSherbert | [itch.io de JDSherbert](https://jdsherbert.itch.io) | Atribución recogida: **Sounds by JDSherbert — https://jdsherbert.itch.io** |
-
-No debe afirmarse que todas las fuentes consultadas se incorporaron finalmente al juego sin comprobar los archivos de audio utilizados. La finalidad educativa y la atribución **no sustituyen una licencia** de uso o redistribución.
-
 **Documento detallado:** [CREDITOS.md — fuentes, autores, referencias y condiciones](CREDITOS.md).
 
 ---
