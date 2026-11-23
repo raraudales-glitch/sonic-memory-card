@@ -312,7 +312,7 @@ La acción de voltear recibe un objeto JSON con los enteros `posicion` (desde 0)
 - [ ] Calcular puntaje, victoria, derrota, tiempo agotado y abandono en el servidor.
 - [x] Crear resultado, historial paginado, estadísticas y clasificación por dificultad.
 - [ ] Incorporar animaciones, sonidos, música y controles separados de volumen.
-- [ ] Crear `CREDITOS.md` con fuente y licencia de recursos audiovisuales.
+- [x] Crear `CREDITOS.md` con fuente y licencia de recursos audiovisuales.
 
 ### Infraestructura y publicación
 
@@ -387,3 +387,22 @@ Para organizar nuestro trabajo tomamos como referencia la **Guía General del Pr
 ### Sobre la temática y los recursos
 
 Elegimos a Sonic como temática visual para nuestro juego. **Este es un proyecto universitario desarrollado por nuestro equipo, no un juego oficial de SEGA.** En `CREDITOS.md` indicaremos de dónde provienen las imágenes, la música y los sonidos que utilicemos, así como sus permisos o licencias de uso.
+
+## Créditos y atribuciones
+
+### Música
+- Chao Garden Extended Mix — Sonic Adventure 2, SEGA.
+- Lights, Camera, Action! — Sonic Mania, Tee Lopes.
+- Sonic Drowning Theme — Sonic the Hedgehog (1991).
+
+### Imágenes
+Se documentan las fuentes de las ilustraciones de los 18 personajes de Sonic, incluyendo artistas y galerías como Nibroc-Rock, JollyLink, theEyZmaster, TheMarioMan56, RougeAndGlaceon, TotallyNotIncina y JCThornton.
+
+### Efectos de sonido
+- ROHHSA — NETCROSIS VOLUME ONE.
+- Chequered Ink — 400 Sounds Pack.
+- JDSherbert — Recursos sonoros.
+
+**[Consultar todos los créditos originales, fuentes y licencias en CREDITOS.md](CREDITOS.md)**
+
+Sonic Memory Card es un proyecto académico no oficial. La atribución no sustituye los permisos de uso de los recursos.
