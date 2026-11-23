@@ -1,0 +1,83 @@
+{% extends "memory/perfil.html" %}
+{% load static %}
+{% block titulo %}TOP 5 SEMANAL POR DIFICULTAD{% endblock %}
+{% block estilos %}
+<style>
+    .ranking-titulo { display: flex; align-items: center; gap: 16px; }
+    .ranking-titulo img { width: 64px; height: auto; }
+    .ranking-niveles { display: flex; flex-wrap: wrap; gap: 12px; margin: 0 0 24px; }
+    .ranking-niveles a { flex: 1 1 160px; padding: 14px 18px; border-radius: 12px; text-decoration: none; font-weight: 900; text-align: center; color: #fff; border: 2px solid transparent; transition: transform .15s, filter .15s; }
+    .ranking-niveles a:hover { transform: translateY(-2px); filter: brightness(1.1); }
+    .ranking-niveles a[aria-current="page"] { border-color: #fff; box-shadow: 0 0 0 2px rgba(255, 223, 0, .3); }
+    .ranking-niveles a:nth-child(1) { background: #087b3b; }
+    .ranking-niveles a:nth-child(2) { background: #d7a90d; color: #121212; }
+    .ranking-niveles a:nth-child(3) { background: #a71930; }
+    .ranking-tabla-scroll { width: 100%; overflow-x: auto; }
+    .ranking-tabla { width: 100%; min-width: 440px; border-collapse: collapse; color: #e4efff; }
+    .ranking-tabla th, .ranking-tabla td { padding: 13px 8px; text-align: left; border-bottom: 1px solid #234b78; overflow-wrap: anywhere; }
+    .ranking-tabla thead th { color: #b6cce9; }
+    .ranking-tabla td:nth-child(3) { color: #ffdf00; font-weight: 700; }
+    .ranking-semanas { display: flex; flex-wrap: wrap; gap: 9px; list-style: none; padding: 0; }
+    .ranking-semanas [aria-current="page"] { border-color: #ffdf00; color: #ffdf00; }
+    .ranking-actual { margin: 8px 0 0; color: #b6cce9; }
+    @media (max-width: 550px) { .ranking-titulo img { width: 44px; } .ranking-titulo h1 { font-size: 24px; } .ranking-niveles { gap: 7px; } .ranking-niveles a { flex: 1 1 90px; font-size: 13px; padding: 12px 7px; } }
+</style>
+{% endblock %}
+{% block contenido %}
+<section class="perfil-header">
+    <div class="ranking-titulo">
+        <img src="{% static 'memory/images/sonic-logo.gif' %}" alt="">
+        <h1>TOP 5 GLOBAL SEMANAL</h1>
+    </div>
+    <p class="detalle">{{ inicio|date:"j F Y" }} – {{ fin|date:"j F Y" }} · Hora de Tegucigalpa</p>
+    <p class="ranking-actual">Clasificación independiente por dificultad: los puntos de un nivel no se suman con los de otro.</p>
+    {% if posicion %}
+        <p class="estado-activo">Tu posición en {{ nombre_nivel }} es #{{ posicion }}.</p>
+    {% else %}
+        <p class="detalle">Todavía no tienes victorias oficiales en {{ nombre_nivel }} para esta semana.</p>
+    {% endif %}
+</section>
+<nav class="ranking-niveles" aria-label="Clasificaciones por dificultad">
+    {% for clave, etiqueta in niveles_ranking %}
+        <a href="?nivel={{ clave }}&amp;semana={{ semana_param }}"{% if nivel == clave %} aria-current="page"{% endif %}>{{ etiqueta }}</a>
+    {% endfor %}
+</nav>
+{% if semana_invalida %}
+<section class="seccion"><p role="status">La semana solicitada no es válida. Mostramos la semana actual.</p></section>
+{% endif %}
+<section class="seccion">
+    <h2>TOP 5 — {{ nombre_nivel }}</h2>
+    {% if mejores %}
+        <div class="ranking-tabla-scroll">
+            <table class="ranking-tabla">
+                <thead><tr><th scope="col">Puesto</th><th scope="col">Jugador</th><th scope="col">Puntos oficiales</th><th scope="col">Victorias</th></tr></thead>
+                <tbody>
+                {% for fila in mejores %}
+                    <tr>
+                        <td>{{ fila.puesto }}{% if fila.puesto == 1 %} 🥇{% elif fila.puesto == 2 %} 🥈{% elif fila.puesto == 3 %} 🥉{% endif %}</td>
+                        <th scope="row">{{ fila.jugador }}</th>
+                        <td>{{ fila.puntos }}</td>
+                        <td>{{ fila.victorias }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="detalle">Todavía no hay victorias oficiales en {{ nombre_nivel }} para esta semana.</p>
+    {% endif %}
+</section>
+<section class="seccion">
+    <h2>Semanas anteriores — {{ nombre_nivel }}</h2>
+    {% if anteriores %}
+        <ul class="ranking-semanas">
+            <li><a class="volver" href="{% url 'memory:top_semanal' %}?nivel={{ nivel }}">Semana actual</a></li>
+            {% for semana in anteriores %}
+                <li><a class="volver" href="?nivel={{ nivel }}&amp;semana={{ semana }}">Semana del {{ semana }}</a></li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p class="detalle">Aún no hay resultados anteriores de esta dificultad.</p>
+    {% endif %}
+</section>
+{% endblock %}
