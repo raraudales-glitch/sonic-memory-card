@@ -32,7 +32,7 @@
     <p class="detalle">{{ inicio|date:"j F Y" }} – {{ fin|date:"j F Y" }} · Hora de Tegucigalpa</p>
     <p class="ranking-actual">Clasificación independiente por dificultad: los puntos de un nivel no se suman con los de otro.</p>
     {% if posicion %}
-        <p class="estado-activo">Tu posición en {{ nombre_nivel }} es #{{ posicion }}.</p>
+        <p class="estado-activo">Tu posición es #{{ posicion }} ({{ nombre_nivel }}).</p>
     {% else %}
         <p class="detalle">Todavía no tienes victorias oficiales en {{ nombre_nivel }} para esta semana.</p>
     {% endif %}
