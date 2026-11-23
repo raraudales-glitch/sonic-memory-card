@@ -1,3 +1,4 @@
+{% load static %}
 
 <!DOCTYPE html>
 <html lang="es">
@@ -290,24 +291,23 @@
         }
     </style>
     {% block estilos %}{% endblock %}
+    <style>
+        body { padding: 0; }
+        .contenedor { padding: 32px 20px; }
+        @media (max-width: 480px) {
+            body { padding: 0; }
+            .contenedor { padding: 20px 12px; }
+        }
+    </style>
+    <link rel="stylesheet" href="{% static 'memory/css/cabecera.css' %}?v=1">
 </head>
 
 <body>
+    {% include "memory/_cabecera.html" %}
 
 <div class="contenedor">
 
-    <header class="barra-superior">
-        <div class="marca">
-            SONIC MEMORY CARD
-        </div>
 
-        <a
-            href="{% url 'memory:inicio' %}"
-            class="volver"
-        >
-            Volver al menú
-        </a>
-    </header>
 
     {% block contenido %}
     <section class="perfil-header">
@@ -452,5 +452,6 @@
 
 </div>
 
+<script defer src="{% static 'memory/js/menu_opciones.js' %}?v=8"></script>
 </body>
 </html>

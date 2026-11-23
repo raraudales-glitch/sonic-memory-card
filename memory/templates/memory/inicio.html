@@ -367,66 +367,12 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="{% static 'memory/css/cabecera.css' %}?v=1">
 </head>
 
 <body>
 
-    <header class="barra-superior">
-
-        <div class="marca">
-
-            <img
-                src="{% static 'memory/images/sonic-logo.gif' %}"
-                alt="Sonic Logo"
-                class="logo-superior"
-            >
-
-            <div class="titulo">
-                SONIC MEMORY GAME
-            </div>
-
-        </div>
-
-        <div class="zona-usuario">
-
-            <div class="jugador">
-                <span class="jugador-label">
-                    Jugador
-                </span>
-
-                <span class="jugador-nombre">
-                    {{ request.user.username }}
-                </span>
-            </div>
-
-            <a
-                href="{% url 'memory:perfil' %}"
-                class="btn-superior btn-perfil"
-            >
-                Mi perfil
-            </a>
-
-            <a href="{% url 'memory:top_semanal' %}" class="btn-superior btn-perfil">
-                🏆 TOP 5
-            </a>
-
-            <form
-                method="post"
-                action="{% url 'logout' %}"
-            >
-                {% csrf_token %}
-
-                <button
-                    type="submit"
-                    class="btn-superior btn-cerrar"
-                >
-                    Cerrar sesión
-                </button>
-            </form>
-
-        </div>
-
-    </header>
+    {% include "memory/_cabecera.html" %}
 
     <main class="contenedor">
         <nav class="navegacion-menu" aria-label="Opciones del juego">
