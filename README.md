@@ -303,31 +303,31 @@ La acción de voltear recibe un objeto JSON con los enteros `posicion` (desde 0)
 
 ### Juego y usuarios
 
-- [ ] Registro, inicio y cierre de sesión; privacidad entre usuarios.
-- [ ] Pantallas de inicio, instrucciones y selección de nivel.
-- [ ] Interfaz adaptable desde 360 px, controles de ratón y pantalla táctil.
-- [ ] Generar y barajar las cartas en Django sin enviar el orden completo al navegador.
-- [ ] Validar volteos y jugadas repetidas; controlar el tiempo con la hora del servidor.
-- [ ] Implementar tres niveles con los parámetros oficiales.
-- [ ] Calcular puntaje, victoria, derrota, tiempo agotado y abandono en el servidor.
+- [x] Registro, inicio y cierre de sesión; privacidad entre usuarios.
+- [x] Pantallas de inicio, instrucciones y selección de nivel.
+- [x] Interfaz adaptable desde 360 px, controles de ratón y pantalla táctil.
+- [x] Generar y barajar las cartas en Django sin enviar el orden completo al navegador.
+- [x] Validar volteos y jugadas repetidas; controlar el tiempo con la hora del servidor.
+- [x] Implementar tres niveles con los parámetros oficiales.
+- [x] Calcular puntaje, victoria, derrota, tiempo agotado y abandono en el servidor.
 - [x] Crear resultado, historial paginado, estadísticas y clasificación por dificultad.
-- [ ] Incorporar animaciones, sonidos, música y controles separados de volumen.
+- [x] Incorporar animaciones, sonidos, música y controles separados de volumen.
 - [x] Crear `CREDITOS.md` con fuente y licencia de recursos audiovisuales.
 
 ### Infraestructura y publicación
 
-- [ ] Usar **Gunicorn** en el contenedor de producción en lugar de `runserver`.
-- [ ] Ejecutar Django bajo un **usuario sin privilegios**.
-- [ ] Incorporar **Caddy o Nginx**, redes `frontend` y `backend`, estáticos y healthchecks.
-- [ ] Configurar límites de CPU y memoria en Compose.
-- [ ] Preparar ajustes de producción: `DJANGO_DEBUG=False`, hosts y orígenes CSRF autorizados.
-- [ ] Publicar en un servidor Linux con acceso SSH, dominio y **HTTPS** válido.
-- [ ] Comprobar acceso externo y que PostgreSQL no publique el puerto 5432.
+- [x] Usar **Gunicorn** en el contenedor de producción en lugar de `runserver`.
+- [x] Ejecutar Django bajo un **usuario sin privilegios**.
+- [x] Incorporar **Caddy o Nginx**, redes `frontend` y `backend`, estáticos y healthchecks.
+- [x] Configurar límites de CPU y memoria en Compose.
+- [x] Preparar ajustes de producción: `DJANGO_DEBUG=False`, hosts y orígenes CSRF autorizados.
+- [x] Publicar en un servidor Linux con acceso SSH, dominio y **HTTPS** válido.
+- [x] Comprobar acceso externo y que PostgreSQL no publique el puerto 5432.
 - [ ] Configurar y probar respaldo/restauración de la base de datos.
 
 ### Calidad, evidencias y entregables
 
-- [ ] Implementar **al menos 10 pruebas automatizadas** con `python manage.py test`.
+- [x] Implementar **al menos 10 pruebas automatizadas** con `python manage.py test`.
 - [ ] Verificar los casos específicos M1–M6 del Memory Game y las pruebas comunes C01–C17.
 - [ ] Capturar evidencia de CPU, memoria, disco, kernel, redes, volúmenes y `docker stats`.
 - [ ] Ejecutar una prueba de carga moderada y un fallo controlado documentado.
