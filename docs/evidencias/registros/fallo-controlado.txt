@@ -1,0 +1,12 @@
+# Fallo controlado: detener PostgreSQL y comprobar /salud/ — 2026-11-26 22:49 CST
+
+1) Estado normal:
+   GET /salud/ -> {"ok": true}  HTTP 200
+2) Se detiene PostgreSQL (equivalente a: docker compose stop db)
+   GET /salud/ -> {"ok": false}  HTTP 503
+   GET /cuentas/login/ -> HTTP 200
+3) Se inicia PostgreSQL de nuevo (equivalente a: docker compose start db)
+   GET /salud/ -> {"ok": true}  HTTP 200
+
+Conclusión: la aplicación detecta la caída de la base (HTTP 503 en /salud/ sin exponer detalles internos) y se recupera sola al volver PostgreSQL, sin reiniciar Django ni perder datos.
+Partidas conservadas tras la recuperación: 10

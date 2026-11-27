@@ -1,0 +1,13 @@
+# Prueba de carga moderada — Gunicorn (3 workers) + PostgreSQL, instalación local, 2026-11-26 22:49 CST
+
+## Ronda 1: 300 solicitudes, 10 concurrentes
+Solicitudes: 300 | Concurrencia: 10 | Rutas: /salud/, /cuentas/login/, /cuentas/registro/
+Duración total: 0.49 s | Rendimiento: 614.2 solicitudes/s
+Latencia ms -> media 15.7 | p50 13.8 | p95 24.5 | máx 77.8
+Códigos HTTP: {200: 300}
+
+## Ronda 2: 1000 solicitudes, 25 concurrentes
+Solicitudes: 1000 | Concurrencia: 25 | Rutas: /salud/, /cuentas/login/, /cuentas/registro/
+Duración total: 1.32 s | Rendimiento: 756.9 solicitudes/s
+Latencia ms -> media 32.0 | p50 31.7 | p95 38.3 | máx 52.9
+Códigos HTTP: {200: 1000}

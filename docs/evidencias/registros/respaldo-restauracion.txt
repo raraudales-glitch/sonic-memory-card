@@ -1,0 +1,33 @@
+# Prueba de respaldo y restauración (instalación local aislada, 2026-11-26 22:49 CST)
+
+$ pg_dump -Fc -d sonicmemory -f respaldo.dump
+Archivo: /tmp/respaldo.dump Tamaño: 59K
+
+$ pg_restore --list respaldo.dump | head   (el archivo es legible)
+Tablas con datos en el respaldo: 16
+
+$ createdb sonic_restaurada && pg_restore -d sonic_restaurada respaldo.dump
+Restauración completada sin errores
+
+Comparación de conteos (original vs. restaurada):
+  auth_user            original=4     restaurada=4     OK
+  memory_personaje     original=18    restaurada=18    OK
+  memory_partida       original=10    restaurada=10    OK
+  memory_movimiento    original=258   restaurada=258   OK
+
+Partidas ganadas en la base restaurada:
+   username   | dificultad | puntaje | errores 
+--------------+------------+---------+---------
+ tails_tester | DIFICIL    |    3780 |       2
+ sonic_tester | DIFICIL    |    3780 |       2
+ amy_tester   | DIFICIL    |    3640 |       4
+ sonic_tester | FACIL      |    1700 |       0
+ tails_tester | FACIL      |    1630 |       2
+ amy_tester   | FACIL      |    1560 |       4
+ sonic_tester | NORMAL     |    2483 |       1
+ tails_tester | NORMAL     |    2430 |       2
+ amy_tester   | NORMAL     |    2333 |       4
+(9 rows)
+
+
+La base original 'sonicmemory' no fue modificada; la restauración se hizo en 'sonic_restaurada'.

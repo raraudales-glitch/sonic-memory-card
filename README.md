@@ -7,7 +7,7 @@
 **Repositorio:** https://github.com/raraudales-glitch/sonic-memory-card  
 **Juego público:** https://159-54-142-136.sslip.io/
 
-> **Estado del proyecto (noviembre de 2026):** aplicación desarrollada y publicada en Oracle Cloud con Django, PostgreSQL, Gunicorn, Caddy y HTTPS. El juego dispone de usuarios, partidas, resultados, clasificación y TOP 5 semanal. En Oracle se ejecutaron 46 pruebas: **44 aprobadas, 0 fallidas y 2 omitidas** porque las pruebas de navegador requieren Chromium. Continúan pendientes algunas evidencias académicas, una prueba documentada de restauración y mejoras en la animación inicial de previsualización.
+> **Estado del proyecto (noviembre de 2026):** aplicación desarrollada y publicada en Oracle Cloud con Django, PostgreSQL, Gunicorn, Caddy y HTTPS. El juego dispone de usuarios, partidas, resultados, clasificación y TOP 5 semanal. En Oracle se ejecutaron 46 pruebas: **44 aprobadas, 0 fallidas y 2 omitidas** porque las pruebas de navegador requieren Chromium. En una instalación local con Chromium la suite actual ejecutó **53 pruebas, todas aprobadas**, incluidas las de pantalla táctil. También documentamos capturas del juego, la verificación del TOP 5 por nivel, una restauración de respaldo, una prueba de carga moderada y un fallo controlado (ver [sección 11](#11-evidencias)). Continúan pendientes las evidencias de recursos del servidor Oracle, la organización de M1–M6 y C01–C17 y la mejora de la animación inicial de previsualización.
 
 ## 1. Descripción
 
@@ -248,6 +248,13 @@ sonic-memory-card/
 │   ├── test_auditoria_partidas.py
 │   ├── test_rutas_obligatorias.py
 │   └── test_tablero_tactil.py
+├── docs/evidencias/
+│   ├── capturas/
+│   └── registros/
+├── scripts/
+│   ├── recolectar_evidencias_oracle.sh
+│   ├── prueba_carga.py
+│   └── capturas_evidencias.py
 ├── Dockerfile
 ├── docker-compose.yml
 ├── Caddyfile
@@ -336,7 +343,8 @@ La API de volteo recibe `posicion` y `seq_num` en JSON. La API verifica sesión,
 - [x] Documentar recursos gráficos y sonoros en `CREDITOS.md`.
 - [x] Optimizar imágenes y respuesta táctil del tablero.
 - [ ] Mejorar la suavidad de la previsualización inicial de Fácil y Normal.
-- [ ] Verificar visualmente con Chromium las dos pruebas de interacción omitidas en el contenedor.
+- [x] Verificar con Chromium las pruebas de interacción táctil (53/53 aprobadas en instalación local; ver [registro](docs/evidencias/registros/pruebas-automatizadas.txt)).
+- [x] Jugar una partida oficial en cada nivel y comprobar que el TOP 5 semanal muestra una tabla independiente por dificultad.
 
 ### Infraestructura y publicación
 
@@ -348,7 +356,7 @@ La API de volteo recibe `posicion` y `seq_num` en JSON. La API verifica sesión,
 - [x] Comprobar conexión externa y aislamiento del puerto de PostgreSQL.
 - [x] Construir y publicar actualizaciones del contenedor web sin borrar volúmenes de la base.
 - [x] Crear un respaldo de PostgreSQL y comprobar que el archivo de respaldo es legible.
-- [ ] Demostrar y documentar una restauración real del respaldo en un entorno separado.
+- [x] Demostrar y documentar una restauración real del respaldo en una base separada (instalación local; ver [registro](docs/evidencias/registros/respaldo-restauracion.txt)).
 - [ ] Conservar una copia externa verificada del respaldo, si aún no se ha realizado.
 
 ### Calidad, evidencias y entregables
@@ -356,18 +364,78 @@ La API de volteo recibe `posicion` y `seq_num` en JSON. La API verifica sesión,
 - [x] Incorporar más de 10 pruebas automatizadas.
 - [x] Ejecutar 46 pruebas en Oracle: 44 aprobadas, 0 fallos y 2 omitidas.
 - [x] Verificar las protecciones HTTPS, CSRF, autenticación e idempotencia mediante pruebas automatizadas.
+- [x] Ejecutar 53 pruebas con Chromium habilitado: 53 aprobadas, 0 fallos y 0 omitidas (instalación local).
 - [x] Documentar la URL pública del videojuego.
+- [x] Incorporar capturas de pantalla de todas las vistas del juego, en computadora y teléfono.
 - [ ] Completar y organizar todas las evidencias requeridas de M1–M6 y C01–C17.
-- [ ] Consolidar evidencias de CPU, memoria, disco, kernel, redes, volúmenes y `docker stats`.
-- [ ] Documentar la prueba de carga moderada y un fallo controlado.
-- [ ] Demostrar la restauración desde un respaldo sin afectar datos reales.
+- [ ] Consolidar evidencias de CPU, memoria, disco, kernel, redes, volúmenes y `docker stats` en Oracle (script listo: `scripts/recolectar_evidencias_oracle.sh`).
+- [x] Documentar la prueba de carga moderada y un fallo controlado.
+- [x] Demostrar la restauración desde un respaldo sin afectar datos reales.
 - [ ] Revisar y entregar el informe técnico final y la bitácora de uso de IA.
 - [ ] Completar la presentación final y la defensa grupal.
 - [ ] Revisar la participación y los commits de todos los integrantes.
 - [ ] Documentar una cuenta de prueba si se necesita, sin publicar contraseñas privadas.
 - [ ] Verificar licencias o permisos de los recursos externos pendientes.
 
-## 11. Administración y actualizaciones de Oracle Cloud
+## 11. Evidencias
+
+Todas las evidencias están en [`docs/evidencias/`](docs/evidencias/). Las capturas y registros de esta sección se generaron el **26 de noviembre de 2026** en una **instalación local** con el mismo código del repositorio (Django + Gunicorn + PostgreSQL 16) y cuentas de prueba (`sonic_tester`, `tails_tester`, `amy_tester`) que no existen en el servidor público. Las evidencias propias del servidor Oracle se recolectan con [`scripts/recolectar_evidencias_oracle.sh`](scripts/recolectar_evidencias_oracle.sh).
+
+### 11.1. Acceso y menú principal
+
+| Inicio de sesión | Selección de dificultad |
+|---|---|
+| ![Inicio de sesión](docs/evidencias/capturas/01-login.jpg) | ![Selección de dificultad](docs/evidencias/capturas/03-inicio-seleccion-nivel.jpg) |
+| **Registro** | **Instrucciones** |
+| ![Registro](docs/evidencias/capturas/02-registro.jpg) | ![Instrucciones](docs/evidencias/capturas/04-instrucciones.jpg) |
+
+### 11.2. Partidas en los tres niveles
+
+| Nivel | Tablero en juego | Victoria | Resultado guardado |
+|---|---|---|---|
+| Fácil (4 × 4) | ![Fácil en juego](docs/evidencias/capturas/05-facil-en-juego.jpg) | ![Fácil victoria](docs/evidencias/capturas/05-facil-victoria.jpg) | ![Fácil resultado](docs/evidencias/capturas/05-facil-resultado.jpg) |
+| Normal (4 × 5) | ![Normal en juego](docs/evidencias/capturas/06-normal-en-juego.jpg) | ![Normal victoria](docs/evidencias/capturas/06-normal-victoria.jpg) | ![Normal resultado](docs/evidencias/capturas/06-normal-resultado.jpg) |
+| Difícil (6 × 6) | ![Difícil en juego](docs/evidencias/capturas/07-dificil-en-juego.jpg) | ![Difícil victoria](docs/evidencias/capturas/07-dificil-victoria.jpg) | ![Difícil resultado](docs/evidencias/capturas/07-dificil-resultado.jpg) |
+
+Los puntajes coinciden con la fórmula de la sección 4. Por ejemplo, en Difícil con 22 s de duración y 2 fallos: (1000 + 5 × 188 − 25 × 2) × 2,0 = **3780**.
+
+### 11.3. TOP 5 semanal por dificultad
+
+Tres jugadores completaron una partida oficial en cada nivel con distinta cantidad de fallos. Cada dificultad muestra su propia tabla y los puntos de un nivel no se suman a los de otro.
+
+| Fácil | Normal | Difícil |
+|---|---|---|
+| ![TOP 5 Fácil](docs/evidencias/capturas/12a-top5-facil.jpg) | ![TOP 5 Normal](docs/evidencias/capturas/12b-top5-normal.jpg) | ![TOP 5 Difícil](docs/evidencias/capturas/12c-top5-dificil.jpg) |
+
+### 11.4. Perfil, historial y clasificación
+
+| Perfil y estadísticas | Historial |
+|---|---|
+| ![Perfil](docs/evidencias/capturas/08-perfil.jpg) | ![Historial](docs/evidencias/capturas/09-historial.jpg) |
+| **Clasificación Fácil** | **Clasificación Difícil** |
+| ![Clasificación Fácil](docs/evidencias/capturas/10-clasificacion-facil.jpg) | ![Clasificación Difícil](docs/evidencias/capturas/11-clasificacion-dificil.jpg) |
+
+### 11.5. Administración y teléfono
+
+| Panel `/admin/` | Partidas en el panel |
+|---|---|
+| ![Panel admin](docs/evidencias/capturas/14-panel-admin.jpg) | ![Partidas admin](docs/evidencias/capturas/15-admin-partidas.jpg) |
+| **Teléfono: menú** | **Teléfono: tablero** |
+| <img src="docs/evidencias/capturas/16-movil-inicio.jpg" width="260" alt="Menú en teléfono"> | <img src="docs/evidencias/capturas/17-movil-tablero.jpg" width="260" alt="Tablero en teléfono"> |
+
+### 11.6. Registros técnicos
+
+| Evidencia | Resultado | Registro |
+|---|---|---|
+| Pruebas automatizadas con Chromium | `Ran 53 tests` · `OK` (0 omitidas) | [pruebas-automatizadas.txt](docs/evidencias/registros/pruebas-automatizadas.txt) |
+| Respaldo y restauración | `pg_dump` → `pg_restore` en la base separada `sonic_restaurada`; conteos idénticos en usuarios, personajes, partidas y movimientos | [respaldo-restauracion.txt](docs/evidencias/registros/respaldo-restauracion.txt) |
+| Prueba de carga moderada | 1000 solicitudes con 25 concurrentes: 100 % HTTP 200, p95 ≈ 38 ms | [prueba-carga.txt](docs/evidencias/registros/prueba-carga.txt) |
+| Fallo controlado | Con PostgreSQL detenido, `/salud/` responde HTTP 503; al reiniciarlo vuelve a HTTP 200 sin perder partidas | [fallo-controlado.txt](docs/evidencias/registros/fallo-controlado.txt) |
+| Recursos del servidor Oracle | Pendiente de ejecutar en el servidor | `scripts/recolectar_evidencias_oracle.sh` |
+
+Los resultados de carga son de la instalación local y no representan la capacidad de la máquina de Oracle. Para repetir la prueba contra otro servidor: `python scripts/prueba_carga.py https://<servidor> 300 10`.
+
+## 12. Administración y actualizaciones de Oracle Cloud
 
 Los siguientes comandos corresponden al servidor **Ubuntu de Oracle**, dentro del directorio `~/sonic-memory-card`. No deben ejecutarse en PowerShell de Windows. Los archivos `.env`, `Caddyfile`, `config/settings.py` y `docker-compose.yml` pueden contener ajustes propios de producción y no deben sobrescribirse sin revisión.
 
@@ -416,7 +484,7 @@ La base de datos utiliza un volumen persistente. **No utilizar `docker compose d
 
 Para revisar contenedores, redes, volúmenes y consumo de recursos se pueden utilizar `sudo docker compose ps`, `sudo docker network ls`, `sudo docker volume ls`, `sudo docker stats --no-stream` y los registros de cada servicio. El resultado de estas verificaciones debe conservarse como evidencia técnica de la entrega.
 
-## 12. Guía del proyecto y créditos de recursos
+## 13. Guía del proyecto y créditos de recursos
 
 ### Referencia académica
 
