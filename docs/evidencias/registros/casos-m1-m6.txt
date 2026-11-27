@@ -1,0 +1,58 @@
+# Casos M1–M6 del Memory Game — ejecutados por HTTP contra http://127.0.0.1:8000
+# Fecha: 2026-11-26 23:38 (hora de Tegucigalpa) · Jugador: sonic_tester (M6: tails_tester)
+
+## M1 — Voltear la misma carta dos veces
+Esperado: la segunda acción se rechaza sin contar fallo.
+  1.er volteo posición 0: HTTP 200 → {"ok": true, "tipo": "primera", "fallos": 0}
+  2.º volteo posición 0:  HTTP 400 → {"ok": false, "error": "Esta carta ya está descubierta"}
+  Estado después: fallos=0, ultima_secuencia=1
+  RESULTADO M1: CUMPLE
+
+## M2 — Voltear una carta ya emparejada
+Esperado: respuesta 400 con mensaje; estado sin cambios.
+  Pareja en posiciones 0 y 19: HTTP 200 → {"ok": true, "tipo": "pareja", "parejas_encontradas": 1}
+  Volteo de nuevo la posición 0: HTTP 400 → {"ok": false, "error": "Esta carta ya está descubierta"}
+  Estado antes:   {"fallos": 0, "parejas_encontradas": 1, "ultima_secuencia": 2, "estado": "EN_CURSO"}
+  Estado después: {"fallos": 0, "parejas_encontradas": 1, "ultima_secuencia": 2, "estado": "EN_CURSO"}
+  RESULTADO M2: CUMPLE
+
+## M3 — Intentar ver el tablero con las herramientas del navegador
+Esperado: la respuesta JSON no contiene el orden completo.
+  Tablero Difícil de 36 cartas.
+  HTML de la página: contiene 'orden'=False, contiene datos de posición=False
+  GET /api/partidas/<id>/estado/: claves de cartas recibidas=0 de 36; campos=['bloqueado_hasta', 'cierre_pendiente', 'emparejadas', 'espera_ms', 'estado', 'fallos', 'fallos_maximos', 'id', 'ok', 'parejas_encontradas', 'parejas_objetivo', 'puntaje', 'tiempo_restante', 'ultima_secuencia', 'visibles']
+  POST /api/partidas/<id>/accion/ (1 volteo): cartas reveladas=1 → kit; contiene 'orden'=False, contiene 'semilla'=False
+  RESULTADO M3 (estado, acciones y HTML): CUMPLE
+  Nota sobre la vista previa (exigida por la guía: 3 s en Fácil y 1,5 s en Normal):
+    1.ª solicitud POST /vista-previa/: activa=True, cartas=16, Cache-Control='max-age=0, no-cache, no-store, must-revalidate, private', contiene semilla=False
+    2.ª solicitud POST /vista-previa/: activa=False, cartas=0
+    Para mostrar todas las cartas durante la vista previa el navegador tiene que recibirlas una sola vez.
+    Fuera de esa ventana ninguna respuesta vuelve a entregarlas, y en Difícil no existe vista previa.
+
+## M4 — Alcanzar fallos permitidos + 1
+Esperado: partida PERDIDA; nuevas acciones responden 409.
+  Fallos permitidos en Difícil: 22. Fallo n.º 23: HTTP 200 → {"estado": "PERDIDA", "fallos": 23, "puntaje": 0}
+  Nueva acción después de perder: HTTP 409 → {"ok": false, "error": "La partida ya terminó", "estado": "PERDIDA"}
+  RESULTADO M4: CUMPLE
+
+## M5 — Encontrar todas las parejas
+Esperado: partida GANADA y puntaje según la fórmula.
+  Última pareja: HTTP 200 → {"estado": "GANADA", "fallos": 3, "parejas_encontradas": 10, "tiempo_restante": 145, "puntaje": 2475}
+  Cálculo manual: (1000 + 5 × 145 − 25 × 3) × 1,5 = 2475  ·  puntaje guardado = 2475
+  RESULTADO M5: CUMPLE
+
+## M6 — Dejar correr el tiempo
+Esperado: partida TIEMPO_AGOTADO; puntaje 0.
+  Partida Fácil creada a las 23:38:55 con límite de 150 s; sin jugar hasta las 23:41:28.
+  GET /estado/ al vencer: {"estado": "TIEMPO_AGOTADO", "tiempo_restante": 0, "cierre_pendiente": true}
+  Intento de volteo después del límite: HTTP 409 → {"ok": false, "error": "La partida ya terminó", "estado": "TIEMPO_AGOTADO", "tiempo_restante": 0, "puntaje": 0}
+  Registro en PostgreSQL: TIEMPO_AGOTADO | puntaje=0
+  RESULTADO M6: CUMPLE
+
+## Resumen
+  M1: CUMPLE
+  M2: CUMPLE
+  M3: CUMPLE
+  M4: CUMPLE
+  M5: CUMPLE
+  M6: CUMPLE
