@@ -253,6 +253,7 @@ sonic-memory-card/
 │   └── registros/
 ├── scripts/
 │   ├── recolectar_evidencias_oracle.sh
+│   ├── casos_m1_m6.py
 │   ├── prueba_carga.py
 │   └── capturas_evidencias.py
 ├── Dockerfile
@@ -367,7 +368,9 @@ La API de volteo recibe `posicion` y `seq_num` en JSON. La API verifica sesión,
 - [x] Ejecutar 53 pruebas con Chromium habilitado: 53 aprobadas, 0 fallos y 0 omitidas (instalación local).
 - [x] Documentar la URL pública del videojuego.
 - [x] Incorporar capturas de pantalla de todas las vistas del juego, en computadora y teléfono.
-- [ ] Completar y organizar todas las evidencias requeridas de M1–M6 y C01–C17.
+- [x] Ejecutar y documentar los casos M1–M6 del Memory Game, con su relación con cada equipo (ver [sección 11.7](#117-casos-de-prueba-m1m6-del-memory-game-y-relación-con-cada-equipo)).
+- [ ] Completar y organizar las evidencias de los casos comunes C01–C17.
+- [ ] Agregar una prueba unitaria propia para M2 (carta ya emparejada).
 - [ ] Consolidar evidencias de CPU, memoria, disco, kernel, redes, volúmenes y `docker stats` en Oracle (script listo: `scripts/recolectar_evidencias_oracle.sh`).
 - [x] Documentar la prueba de carga moderada y un fallo controlado.
 - [x] Demostrar la restauración desde un respaldo sin afectar datos reales.
@@ -431,9 +434,42 @@ Tres jugadores completaron una partida oficial en cada nivel con distinta cantid
 | Respaldo y restauración | `pg_dump` → `pg_restore` en la base separada `sonic_restaurada`; conteos idénticos en usuarios, personajes, partidas y movimientos | [respaldo-restauracion.txt](docs/evidencias/registros/respaldo-restauracion.txt) |
 | Prueba de carga moderada | 1000 solicitudes con 25 concurrentes: 100 % HTTP 200, p95 ≈ 38 ms | [prueba-carga.txt](docs/evidencias/registros/prueba-carga.txt) |
 | Fallo controlado | Con PostgreSQL detenido, `/salud/` responde HTTP 503; al reiniciarlo vuelve a HTTP 200 sin perder partidas | [fallo-controlado.txt](docs/evidencias/registros/fallo-controlado.txt) |
+| Casos M1–M6 | Los seis cumplen | [casos-m1-m6.txt](docs/evidencias/registros/casos-m1-m6.txt) |
 | Recursos del servidor Oracle | Pendiente de ejecutar en el servidor | `scripts/recolectar_evidencias_oracle.sh` |
 
 Los resultados de carga son de la instalación local y no representan la capacidad de la máquina de Oracle. Para repetir la prueba contra otro servidor: `python scripts/prueba_carga.py https://<servidor> 300 10`.
+
+### 11.7. Casos de prueba M1–M6 del Memory Game y relación con cada equipo
+
+La guía (sección 5.1, *Validaciones y casos de prueba del juego*) define seis casos propios del Memory Game. Los ejecutamos por HTTP contra el juego con [`scripts/casos_m1_m6.py`](scripts/casos_m1_m6.py), y las respuestas reales quedaron en [`casos-m1-m6.txt`](docs/evidencias/registros/casos-m1-m6.txt). **Los seis casos cumplen.**
+
+| ID | Caso | Resultado esperado (guía) | Resultado obtenido | Prueba automatizada |
+|---|---|---|---|---|
+| M1 | Voltear la misma carta dos veces | La segunda acción se rechaza sin contar fallo | HTTP 400 «Esta carta ya está descubierta»; fallos = 0 | `test_validacion_secuencia_posicion_y_bloqueo` |
+| M2 | Voltear una carta ya emparejada | 400 con mensaje; estado sin cambios | HTTP 400; fallos, parejas, secuencia y estado idénticos antes y después | Cubierto por el script (sin prueba unitaria propia) |
+| M3 | Ver el tablero en las herramientas del navegador | El JSON no contiene el orden completo | HTML sin datos de posición; `/estado/` y `/accion/` solo entregan las cartas visibles o emparejadas | `test_api_propiedad_metodos_y_estado_sin_tablero_oculto`, `test_tablero_oculto_y_primer_volteo` |
+| M4 | Alcanzar fallos permitidos + 1 | PERDIDA; nuevas acciones 409 | Fallo 23 en Difícil → PERDIDA, puntaje 0; la siguiente acción responde HTTP 409 | `test_limite_de_fallos_y_derrota` |
+| M5 | Encontrar todas las parejas | GANADA y puntaje según la fórmula | Normal con 3 fallos y 145 s restantes: (1000 + 725 − 75) × 1,5 = **2475**, igual al guardado | `test_victoria_puntaje_unico_y_cierre` |
+| M6 | Dejar correr el tiempo | TIEMPO_AGOTADO; puntaje 0 | A los 150 s el servidor marca TIEMPO_AGOTADO, puntaje 0 y rechaza volteos con 409 | `test_tiempo_se_controla_en_el_servidor`, `test_api_rechaza_jugada_despues_del_tiempo_oficial` |
+
+| M3: JSON de `/api/partidas/<id>/estado/` (3 de 36 cartas) | M4: derrota por fallos | M6: tiempo agotado |
+|---|---|---|
+| ![M3 JSON](docs/evidencias/capturas/m3-json-estado.jpg) | ![M4 derrota](docs/evidencias/capturas/m4-derrota.jpg) | ![M6 tiempo agotado](docs/evidencias/capturas/m6-tiempo-agotado.jpg) |
+
+**Aclaración sobre M3 y la vista previa.** La guía exige una vista previa de 3 s en Fácil y 1,5 s en Normal. Para mostrar todas las cartas durante esa vista, el navegador tiene que recibirlas, así que la respuesta de `POST /partidas/<id>/vista-previa/` sí trae el tablero de ese nivel. El proyecto limita esa exposición: la respuesta se entrega **una sola vez** (una segunda solicitud devuelve `cartas: []`), solo por POST, con `Cache-Control: no-store`, sin la semilla, y no aparece en el HTML ni en las respuestas de estado o de jugadas. En Difícil no hay vista previa, por lo que el orden nunca sale del servidor.
+
+#### Relación de cada caso con cada equipo
+
+Usamos los cinco roles de la guía (sección 2.1). Aunque cada equipo tiene una responsabilidad principal, en la defensa cualquier integrante debe poder explicar cualquier caso.
+
+| Caso | Backend Django | Frontend y audio | Infraestructura (DevOps) | Calidad y documentación | Coordinación e integración |
+|---|---|---|---|---|---|
+| **M1** Misma carta dos veces | Rechaza en `voltear_carta()` una posición que ya está en `visibles`, sin sumar fallo ni movimiento | Ignora el segundo toque en la carta ya girada y no reproduce sonido de fallo | El bloqueo `select_for_update()` en PostgreSQL evita que dos solicitudes simultáneas cuenten doble | Ejecuta el caso y guarda la respuesta 400 | Verifica que la regla del servidor y la reacción de la interfaz coincidan |
+| **M2** Carta ya emparejada | Rechaza posiciones de `emparejadas` con 400 y deja el estado intacto | Mantiene las parejas descubiertas con borde verde y sin responder al clic | La transacción atómica garantiza que un rechazo no deje cambios a medias en la base | Compara el estado antes y después; señala que falta una prueba unitaria propia | Prioriza agregar esa prueba antes de la entrega |
+| **M3** Tablero oculto | `estado_publico()` solo devuelve cartas visibles y emparejadas; la semilla nunca sale | El tablero se dibuja con tapas; las imágenes llegan carta por carta o en la vista previa | HTTPS cifra las respuestas; `DJANGO_DEBUG=False` evita páginas de error con datos internos | Captura el JSON y documenta la excepción de la vista previa | Revisa que la vista previa cumpla la guía sin exponer más de lo necesario |
+| **M4** Fallos + 1 | Cierra la partida en PERDIDA con puntaje 0 y responde 409 a toda acción posterior | Muestra «Se acabaron los intentos», el contador en rojo y el sonido de derrota | La partida perdida queda guardada en el volumen persistente de PostgreSQL | Fuerza 23 fallos en Difícil y registra el 409 | Confirma que el límite por nivel coincide con la tabla de la guía |
+| **M5** Victoria | Calcula el puntaje solo en el servidor y lo guarda una única vez | Muestra «¡GANASTE!» con fallos y puntaje, y enlaza al resultado | La victoria alimenta el TOP 5 semanal guardado en la base del servidor | Compara el puntaje con el cálculo manual de la fórmula | Usa el caso en la demostración de la defensa |
+| **M6** Tiempo agotado | El tiempo oficial se mide con la hora del servidor (`inicio_servidor`), no con el reloj del navegador | El temporizador llega a 0 s, parpadea y muestra «Se acabó el tiempo» | Docker y la VM mantienen la hora del servidor; un reinicio no regala tiempo | Deja correr 150 s sin jugar y verifica TIEMPO_AGOTADO y puntaje 0 en PostgreSQL | Verifica que recargar la página no reinicie el tiempo (relación con C09) |
 
 ## 12. Administración y actualizaciones de Oracle Cloud
 
